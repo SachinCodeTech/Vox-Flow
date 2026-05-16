@@ -86,7 +86,7 @@ const ConfidenceRing = ({ value, label }: { value: number, label: string }) => (
 );
 
 const AIInsightsPanel = () => {
-  const { aiInsights = [] } = useWorkflowStore();
+  const { aiInsights } = useWorkflowStore();
   
   return (
     <div className="space-y-6">
@@ -99,7 +99,7 @@ const AIInsightsPanel = () => {
       </div>
       
       <div className="space-y-3">
-        {(!aiInsights || aiInsights.length === 0) ? (
+        {aiInsights.length === 0 ? (
           <div className="p-12 rounded-3xl border border-white/5 bg-white/[0.01] flex flex-col items-center gap-4 text-center">
             <Cpu className="text-white/10 animate-pulse" size={32} />
             <p className="text-[10px] font-bold text-white/20 uppercase tracking-widest">Synthesizing operational patterns...</p>
@@ -140,7 +140,7 @@ const AIInsightsPanel = () => {
 };
 
 const AgentEcosystem = () => {
-  const { agents = [] } = useWorkflowStore();
+  const { agents } = useWorkflowStore();
 
   return (
     <div className="space-y-6">
@@ -153,7 +153,7 @@ const AgentEcosystem = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {agents && agents.map((agent, i) => (
+        {agents.map((agent, i) => (
           <motion.div 
             key={agent.id}
             initial={{ opacity: 0, scale: 0.95 }}
@@ -190,9 +190,9 @@ const AgentEcosystem = () => {
 };
 
 const ActivityLog = () => {
-  const { runtimeJobs = [], workspaces = [] } = useWorkflowStore();
+  const { runtimeJobs, workspaces } = useWorkflowStore();
   
-  const displayJobs = (runtimeJobs && runtimeJobs.length > 0) ? runtimeJobs.slice(0, 5) : [
+  const displayJobs = runtimeJobs.length > 0 ? runtimeJobs.slice(0, 5) : [
     { id: '1', workspaceId: 'arch-dept-001', status: 'success', timestamp: new Date().toISOString(), nodeId: 'Syncing CAD Repo' },
     { id: '2', workspaceId: 'arch-dept-001', status: 'running', timestamp: new Date().toISOString(), nodeId: 'AI Analysis' },
   ];
@@ -207,7 +207,7 @@ const ActivityLog = () => {
       </div>
       <div className="space-y-2">
         {displayJobs.map((job: any, i) => {
-          const ws = workspaces?.find(w => w.id === job.workspaceId);
+          const ws = workspaces.find(w => w.id === job.workspaceId);
           return (
             <motion.div 
               key={job.id}
@@ -236,8 +236,8 @@ const ActivityLog = () => {
 };
 
 export const Dashboard = () => {
-  const { setViewMode, workspaces = [], currentWorkspaceId } = useWorkflowStore();
-  const currentWs = workspaces?.find(w => w.id === currentWorkspaceId);
+  const { setViewMode, workspaces, currentWorkspaceId } = useWorkflowStore();
+  const currentWs = workspaces.find(w => w.id === currentWorkspaceId);
 
   return (
     <div className="flex-1 overflow-y-auto custom-scrollbar p-6 sm:p-10 lg:p-12 space-y-12 pb-48 sm:pb-28">
@@ -269,7 +269,7 @@ export const Dashboard = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <MetricCard title="System Confidence" value="98.2" unit="%" icon={Cpu} color="bg-vox-primary" trend={2.4} />
         <MetricCard title="Vault Integrity" value="0.99" unit="SAFE" icon={ShieldCheck} color="bg-vox-secondary" />
-        <MetricCard title="Neural Mesh" value={workspaces?.length || 0} unit="NODES" icon={Briefcase} color="bg-vox-primary" />
+        <MetricCard title="Neural Mesh" value={workspaces.length} unit="NODES" icon={Briefcase} color="bg-vox-primary" />
         <MetricCard title="Throughput" value="1.4M" unit="SYN" icon={Zap} color="bg-vox-success" />
       </div>
 
@@ -293,7 +293,7 @@ export const Dashboard = () => {
                   </h2>
                 </div>
                 <div className="space-y-3">
-                  {workspaces && workspaces.map(ws => (
+                  {workspaces.map(ws => (
                     <motion.div key={ws.id} className="p-4 rounded-3xl bg-white/[0.01] border border-white/[0.05] hover:border-vox-primary/30 transition-all flex items-center justify-between group">
                        <div className="flex items-center gap-3">
                           <div className="w-8 h-8 rounded-xl bg-white/5 flex items-center justify-center text-white/20 group-hover:text-vox-primary group-hover:bg-vox-primary/10 transition-all">
@@ -301,7 +301,7 @@ export const Dashboard = () => {
                           </div>
                           <div>
                             <h4 className="text-[10px] font-black text-white tracking-widest uppercase">{ws.name}</h4>
-                            <p className="text-[8px] font-black text-white/20 uppercase">{(ws.nodes?.length || 0)} Active Pipelines</p>
+                            <p className="text-[8px] font-black text-white/20 uppercase">{ws.nodes.length} Active Pipelines</p>
                           </div>
                        </div>
                        <div className="w-1.5 h-1.5 rounded-full bg-vox-primary shadow-[0_0_10px_rgba(0,242,255,0.4)]" />

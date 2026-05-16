@@ -37,23 +37,21 @@ export const IntelligenceEngine = () => {
   useEffect(() => {
     // 1. Simulating Runtime Executions (Every 12s)
     const runtimeInterval = setInterval(() => {
-      if (Math.random() > 0.3 && nodes && nodes.length > 0) {
+      if (Math.random() > 0.3 && nodes.length > 0) {
         const randomNode = nodes[Math.floor(Math.random() * nodes.length)];
-        if (randomNode && randomNode.data) {
+        addRuntimeJob({
+          workspaceId: currentWorkspaceId,
+          nodeId: randomNode.data.label,
+          status: 'running'
+        });
+
+        setTimeout(() => {
           addRuntimeJob({
             workspaceId: currentWorkspaceId,
             nodeId: randomNode.data.label,
-            status: 'running'
+            status: Math.random() > 0.08 ? 'success' : 'failed'
           });
-
-          setTimeout(() => {
-            addRuntimeJob({
-              workspaceId: currentWorkspaceId,
-              nodeId: randomNode.data.label,
-              status: Math.random() > 0.08 ? 'success' : 'failed'
-            });
-          }, 3000);
-        }
+        }, 3000);
       }
     }, 12000);
 
@@ -67,17 +65,15 @@ export const IntelligenceEngine = () => {
 
     // 3. Simulating Agent Activity (Every 8s)
     const agentInterval = setInterval(() => {
-      if (agents && agents.length > 0) {
-        const agent = agents[Math.floor(Math.random() * agents.length)];
-        const possibleActions = AGENT_ACTIONS[agent.id] || ['Processing...'];
-        const action = possibleActions[Math.floor(Math.random() * possibleActions.length)];
-        
-        updateAgentStatus(agent.id, 'executing', action);
-        
-        setTimeout(() => {
-          updateAgentStatus(agent.id, 'idle', action);
-        }, 4000);
-      }
+      const agent = agents[Math.floor(Math.random() * agents.length)];
+      const possibleActions = AGENT_ACTIONS[agent.id] || ['Processing...'];
+      const action = possibleActions[Math.floor(Math.random() * possibleActions.length)];
+      
+      updateAgentStatus(agent.id, 'executing', action);
+      
+      setTimeout(() => {
+        updateAgentStatus(agent.id, 'idle', action);
+      }, 4000);
     }, 8000);
 
     // 4. Simulating Event Stream (Every 15s)

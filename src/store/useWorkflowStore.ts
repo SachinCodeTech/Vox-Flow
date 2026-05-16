@@ -110,8 +110,8 @@ export type WorkflowState = {
   setEdges: (edges: Edge[]) => void;
   isExecuting: boolean;
   setIsExecuting: (executing: boolean) => void;
-  viewMode: 'canvas' | 'dashboard' | 'neural' | 'governance' | 'cosmos' | 'advisor';
-  setViewMode: (mode: 'canvas' | 'dashboard' | 'neural' | 'governance' | 'cosmos' | 'advisor') => void;
+  viewMode: 'canvas' | 'dashboard' | 'neural' | 'governance' | 'cosmos' | 'advisor' | 'info' | 'privacy' | 'about';
+  setViewMode: (mode: 'canvas' | 'dashboard' | 'neural' | 'governance' | 'cosmos' | 'advisor' | 'info' | 'privacy' | 'about') => void;
   deleteNode: (nodeId: string) => void;
   saveWorkflow: () => void;
   loadWorkflow: () => boolean;
@@ -181,20 +181,11 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
     { id: 'p2', name: 'CAD Export Governance', rules: ['Architect approval required', 'Watermark injection'], status: 'active', severity: 'standard' },
     { id: 'p3', name: 'AI Operational Limits', rules: ['Max compute threshold: 85%', 'Manual override enabled'], status: 'evaluating', severity: 'standard' }
   ],
-  strategicAdvice: [
-    { id: 'adv-1', category: 'capacity', title: 'Neural Expansion Required', recommendation: 'Provision 4 additional logic gates in Arch-Node-Delta', rationale: 'Current throughput at 94% with incoming CAD review surge', actionable: true, confidence: 0.96 },
-    { id: 'adv-2', category: 'governance', title: 'Policy Drift Detected', recommendation: 'Re-align Sovereign CAD protocol with latest EU standards', rationale: 'Anomalous export patterns detected in Sector 7', actionable: true, confidence: 0.89 },
-    { id: 'adv-3', category: 'restructuring', title: 'System Convergence', recommendation: 'Merge Coordination Agent with Guardian Gate', rationale: 'Redundant handshake logic detected in authentication flow', actionable: false, confidence: 0.72 }
-  ],
-  institutionalMemory: [
-    { id: 'mem-1', pattern: 'Successive Export Burst', occurrence: 'frequent', context: 'Occurs during Friday 16:00-18:00 UTC', timestamp: new Date().toISOString() },
-    { id: 'mem-2', pattern: 'Neural Latency Spike', occurrence: 'emerging', context: 'Correlates with Sector 4 node initialization', timestamp: new Date().toISOString() }
-  ],
-  events: [
-    { id: 'evt-1', source: 'Neural Gate 01', type: 'Synthesis', payload: 'Neural logic converged in Sector 4', timestamp: new Date().toISOString(), impact: 0.8 },
-    { id: 'evt-2', source: 'Guardian', type: 'Security', payload: 'Handshake verified for System Architect', timestamp: new Date().toISOString(), impact: 0.2 }
-  ],
-  health: { stability: 0.98, cognition: 0.94, velocity: 0.88, stress: 0.08 },
+  events: [],
+  simulations: [],
+  strategicAdvice: [],
+  institutionalMemory: [],
+  health: { stability: 0.98, cognition: 0.92, velocity: 0.85, stress: 0.12 },
   isSidebarOpen: true,
   toggleSidebar: () => set((state) => ({ isSidebarOpen: !state.isSidebarOpen })),
   viewMode: 'canvas',
@@ -272,7 +263,7 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
 
   addWorkspace: (name: string) => {
     const newWs: Workspace = {
-      id: `ws-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      id: `ws-${Date.now()}`,
       name,
       nodes: getDefaultNodes(),
       edges: [],
@@ -295,7 +286,7 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
   addRuntimeJob: (job) => {
     const newJob: RuntimeJob = {
       ...job,
-      id: `job-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      id: `job-${Date.now()}`,
       timestamp: new Date().toISOString()
     };
     set({ runtimeJobs: [newJob, ...get().runtimeJobs].slice(0, 50) });
@@ -304,7 +295,7 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
   addInsight: (insight) => {
     const newInsight: AIInsight = {
       ...insight,
-      id: `insight-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      id: `insight-${Date.now()}`,
       timestamp: new Date().toISOString()
     };
     set({ aiInsights: [newInsight, ...get().aiInsights].slice(0, 10) });
@@ -320,7 +311,7 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
   addEvent: (event) => {
     const newEvent: EnterpriseEvent = {
       ...event,
-      id: `event-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      id: `event-${Date.now()}`,
       timestamp: new Date().toISOString()
     };
     set({ events: [newEvent, ...get().events].slice(0, 100) });
@@ -329,7 +320,7 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
   runSimulation: (sim) => {
     const newSim: Simulation = {
       ...sim,
-      id: `sim-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+      id: `sim-${Date.now()}`
     };
     set({ simulations: [newSim, ...get().simulations].slice(0, 5) });
   },
@@ -344,7 +335,7 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
   addStrategicAdvice: (advice) => {
     const newAdvice: StrategicAdvice = {
       ...advice,
-      id: `advice-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+      id: `advice-${Date.now()}`
     };
     set({ strategicAdvice: [newAdvice, ...get().strategicAdvice].slice(0, 10) });
   },
@@ -352,7 +343,7 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
   recordMemory: (memory) => {
     const newMemory: MemoryPattern = {
       ...memory,
-      id: `mem-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      id: `mem-${Date.now()}`,
       timestamp: new Date().toISOString()
     };
     set({ institutionalMemory: [newMemory, ...get().institutionalMemory].slice(0, 50) });
@@ -374,22 +365,15 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
   loadWorkflow: () => {
     const saved = localStorage.getItem('voxflow-enterprise-data');
     if (saved) {
-      try {
-        const { workspaces, currentWorkspaceId } = JSON.parse(saved);
-        if (!workspaces || !Array.isArray(workspaces) || workspaces.length === 0) return false;
-        
-        const current = workspaces.find((w: Workspace) => w.id === currentWorkspaceId) || workspaces[0];
-        set({ 
-          workspaces, 
-          currentWorkspaceId: current.id,
-          nodes: current.nodes || [],
-          edges: current.edges || []
-        });
-        return true;
-      } catch (e) {
-        console.error("Failed to load workflow:", e);
-        return false;
-      }
+      const { workspaces, currentWorkspaceId } = JSON.parse(saved);
+      const current = workspaces.find((w: Workspace) => w.id === currentWorkspaceId) || workspaces[0];
+      set({ 
+        workspaces, 
+        currentWorkspaceId: current.id,
+        nodes: current.nodes,
+        edges: current.edges
+      });
+      return true;
     }
     return false;
   },

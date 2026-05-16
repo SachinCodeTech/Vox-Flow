@@ -161,58 +161,57 @@ export const Sidebar = ({ isCollapsed, onToggle }: { isCollapsed: boolean, onTog
   };
 
   return (
-    <aside className="w-full h-full bg-[#050816] flex flex-col z-10 overflow-hidden border-r border-vox-border shadow-[40px_0_100px_rgba(0,0,0,0.5)]">
+    <aside className="w-full h-full bg-vox-bg/20 flex flex-col z-10 overflow-hidden">
       {/* Top Header / Toggle */}
       <div className={cn(
-        "p-6 border-b border-vox-border flex items-center transition-all bg-white/[0.01]",
+        "p-4 border-b border-vox-border flex items-center transition-all",
         isCollapsed ? "justify-center" : "justify-between"
       )}>
         {!isCollapsed && (
           <div className="flex flex-col">
-            <span className="text-[11px] font-black text-white uppercase tracking-[0.5em] italic font-display">Engine Forge</span>
-            <span className="text-[8px] font-black text-vox-primary/40 uppercase tracking-[0.2em]">Sovereign_OS Library</span>
+            <span className="text-[10px] font-black text-white uppercase tracking-[0.4em]">Engine Forge</span>
+            <span className="text-[7px] font-black text-vox-primary/50 uppercase tracking-[0.2em]">Operational Library</span>
           </div>
         )}
         <button 
           onClick={onToggle}
-          className="p-3 rounded-2xl bg-white/5 hover:bg-vox-primary/20 text-white/40 hover:text-vox-primary transition-all shadow-xl"
+          className="p-2 rounded-lg bg-white/5 hover:bg-vox-primary/10 text-white/30 hover:text-vox-primary transition-all"
         >
-          {isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+          {isCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
         </button>
       </div>
 
       {!isCollapsed && (
-        <div className="p-6 border-b border-vox-border bg-white/[0.02]">
-          <div className="relative group">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-vox-primary transition-colors" size={12} />
+        <div className="p-4 border-b border-vox-border bg-white/[0.02]">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-white/20" size={12} />
             <input 
               type="text" 
-              placeholder="SEARCH_MODULE..." 
+              placeholder="Search components..." 
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full bg-black/60 border border-vox-border rounded-xl py-3 pl-10 pr-4 text-[9px] text-white focus:outline-none focus:border-vox-primary/40 focus:ring-1 focus:ring-vox-primary/20 transition-all placeholder:text-white/10 uppercase font-black tracking-[0.2em]"
+              className="w-full bg-black/40 border border-vox-border rounded-lg py-2 pl-9 pr-4 text-[10px] text-white focus:outline-none focus:border-vox-primary/30 transition-all placeholder:text-white/10 uppercase font-black tracking-widest"
             />
           </div>
         </div>
       )}
 
-      <div className="flex-1 overflow-y-auto custom-scrollbar p-5 space-y-8 pb-32">
+      <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-6 pb-20">
         {/* Templates Rail */}
         {!isCollapsed && search === '' && (
           <div className="space-y-4">
-            <h3 className="text-[9px] font-black text-white/20 uppercase tracking-[0.4em] px-2 italic">Neural_Blueprints</h3>
-            <div className="grid grid-cols-1 gap-2">
+            <h3 className="text-[8px] font-black text-white/20 uppercase tracking-[0.3em] px-1">Active Blueprints</h3>
+            <div className="space-y-1">
               {templates.map(t => (
                 <button 
                   key={t.name}
                   onClick={() => applyTemplate(t)}
-                  className="w-full group p-4 flex items-center gap-4 rounded-2xl bg-white/[0.01] border border-transparent hover:border-vox-primary/30 hover:bg-vox-primary/10 transition-all text-left shadow-lg overflow-hidden relative"
+                  className="w-full group p-2.5 flex items-center gap-3 rounded-lg bg-white/[0.02] border border-transparent hover:border-vox-primary/20 hover:bg-vox-primary/5 transition-all text-left"
                 >
-                  <div className="absolute inset-0 bg-gradient-to-r from-vox-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-white/5 text-white/20 group-hover:text-vox-primary group-hover:scale-110 transition-all relative z-10 border border-white/5">
-                    <Zap size={16} className="text-glow" />
+                  <div className="w-6 h-6 rounded flex items-center justify-center bg-white/5 text-white/30 group-hover:text-vox-primary transition-all">
+                    <Zap size={12} />
                   </div>
-                  <span className="text-[10px] font-black text-white/40 group-hover:text-white uppercase tracking-[0.2em] truncate relative z-10 italic">{t.name}</span>
+                  <span className="text-[9px] font-black text-white/50 group-hover:text-white uppercase tracking-widest truncate">{t.name}</span>
                 </button>
               ))}
             </div>
@@ -221,13 +220,13 @@ export const Sidebar = ({ isCollapsed, onToggle }: { isCollapsed: boolean, onTog
 
         {/* Node Groups */}
         {filteredNodeList.map((group) => (
-          <div key={group.group} className="space-y-4">
+          <div key={group.group} className="space-y-3">
             {!isCollapsed && (
-              <h3 className="text-[9px] font-black text-white/20 uppercase tracking-[0.5em] px-2 italic">{group.group}</h3>
+              <h3 className="text-[8px] font-black text-white/20 uppercase tracking-[0.3em] px-1">{group.group}</h3>
             )}
             
             <div className={cn(
-              "grid gap-3",
+              "grid gap-2",
               isCollapsed ? "grid-cols-1" : "grid-cols-2"
             )}>
               {group.items.map((node) => {
@@ -239,26 +238,25 @@ export const Sidebar = ({ isCollapsed, onToggle }: { isCollapsed: boolean, onTog
                     onDragStart={(e) => onDragStart(e, node)}
                     onClick={() => handleNodeClick(node)}
                     className={cn(
-                      "group flex items-center justify-center rounded-[1.5rem] border border-vox-border bg-vox-panel/40 backdrop-blur-md hover:bg-vox-primary/10 hover:border-vox-primary/40 cursor-grab active:cursor-grabbing transition-all duration-500 relative overflow-hidden shadow-xl",
-                      isCollapsed ? "p-4" : "flex-col p-6 gap-3 h-24"
+                      "group flex items-center justify-center rounded-xl border border-vox-border bg-vox-panel/40 hover:bg-vox-primary/5 hover:border-vox-primary/30 cursor-grab active:cursor-grabbing transition-all duration-300 relative",
+                      isCollapsed ? "p-3" : "flex-col p-4 gap-2 h-20"
                     )}
                     title={isCollapsed ? node.label : undefined}
                   >
-                    <div className="absolute inset-0 bg-gradient-to-br from-vox-primary/[0.02] to-transparent pointer-events-none" />
                     <div className={cn(
-                      "rounded-xl flex items-center justify-center transition-all group-hover:scale-110 group-hover:shadow-[0_0_20px_rgba(0,229,255,0.2)]",
-                      isCollapsed ? "w-10 h-10 bg-white/5 text-white/30 group-hover:text-vox-primary" : "w-12 h-12 bg-white/5 text-white/20 group-hover:text-vox-primary"
+                      "rounded-lg flex items-center justify-center transition-all group-hover:scale-110",
+                      isCollapsed ? "w-8 h-8 bg-white/5 text-white/40 group-hover:text-vox-primary" : "w-10 h-10 bg-white/5 text-white/20 group-hover:text-vox-primary"
                     )}>
-                      <Icon size={isCollapsed ? 18 : 22} />
+                      <Icon size={isCollapsed ? 14 : 18} />
                     </div>
                     {!isCollapsed && (
-                      <span className="text-[9px] text-white/30 group-hover:text-white transition-colors font-black uppercase tracking-[0.1em] text-center leading-[1.1]">
+                      <span className="text-[8px] text-white/40 group-hover:text-white transition-colors font-black uppercase tracking-[0.1em] text-center leading-none">
                         {node.label}
                       </span>
                     )}
                     
-                    {/* Atmospheric Glow */}
-                    <div className="absolute -bottom-4 -right-4 w-12 h-12 bg-vox-primary/5 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
+                    {/* Hover Glow Particle (Atmospheric) */}
+                    <div className="absolute inset-0 bg-vox-primary/0 group-hover:bg-vox-primary/5 transition-all -z-10 blur-xl opacity-0 group-hover:opacity-100" />
                   </div>
                 );
               })}

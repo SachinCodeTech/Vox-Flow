@@ -34,18 +34,22 @@ const TerminalDrawer = ({ isExecuting }: { isExecuting: boolean }) => {
 
       const timer = setTimeout(() => {
         const endTimestamp = new Date().toLocaleTimeString();
-        setLogs(prev => [...prev, { id: `end-${Date.now()}`, msg: `[${endTimestamp}] PIPELINE EXECUTION COMPLETE.`, type: 'success' as const }]);
+        setLogs(prev => [...prev, { id: 'end', msg: `[${endTimestamp}] PIPELINE EXECUTION COMPLETE.`, type: 'success' as const }]);
       }, 2000);
       return () => clearTimeout(timer);
     }
   }, [isExecuting]);
 
   return (
-    <div className={cn(
-      "absolute bottom-0 md:bottom-0 z-50 bg-black/90 backdrop-blur-3xl border-t border-white/5 transition-all duration-500 shadow-[0_-20px_40px_rgba(0,0,0,0.5)]",
-      "mb-16 md:mb-0", // Lift above mobile nav
-      isOpen ? "h-56" : "h-10"
-    )}>
+    <motion.div 
+      initial={false}
+      animate={{ height: isOpen ? 224 : 40 }}
+      transition={{ type: "spring", stiffness: 300, damping: 30 }}
+      className={cn(
+        "absolute bottom-0 left-0 right-0 z-50 bg-black/90 backdrop-blur-3xl border-t border-white/5 shadow-[0_-20px_40px_rgba(0,0,0,0.5)] w-full overflow-hidden",
+        "mb-16 md:mb-0" // Lift above mobile nav
+      )}
+    >
       <button 
         onClick={() => setIsOpen(!isOpen)}
         className="w-full h-10 flex items-center justify-between px-6 hover:bg-white/5 transition-colors group border-b border-white/[0.02] left-0 right-0"
@@ -79,7 +83,7 @@ const TerminalDrawer = ({ isExecuting }: { isExecuting: boolean }) => {
           </div>
         ))}
       </div>
-    </div>
+    </motion.div>
   );
 };
 
@@ -242,6 +246,7 @@ export const FlowCanvas = () => {
         connectionMode={ConnectionMode.Loose}
         deleteKeyCode={['Backspace', 'Delete']}
         fitView
+        onlyRenderVisibleElements={true}
       >
         <Background 
           color="#00E5FF" 
@@ -387,8 +392,8 @@ export const FlowCanvas = () => {
           </div>
         </Panel>
 
-        <TerminalDrawer isExecuting={isExecuting} />
       </ReactFlow>
+      <TerminalDrawer isExecuting={isExecuting} />
     </div>
   );
 };

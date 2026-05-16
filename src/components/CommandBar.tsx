@@ -47,42 +47,39 @@ export const CommandBar = () => {
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            className="w-full max-w-3xl bg-vox-panel/60 backdrop-blur-3xl border border-vox-border rounded-[3.5rem] p-10 shadow-[0_40px_100px_rgba(0,0,0,0.9)] overflow-hidden relative group"
+            className="w-full max-w-2xl bg-[#0a0a0a]/80 backdrop-blur-3xl border border-white/10 rounded-3xl sm:rounded-[2.5rem] p-4 sm:p-6 shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden relative group"
           >
-            {/* Ambient Effects */}
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(0,229,255,0.05)_0%,transparent_70%)] pointer-events-none" />
-            <div className="absolute -top-32 -left-32 w-80 h-80 bg-vox-primary/10 blur-[120px] rounded-full animate-pulse" />
+            {/* Ambient Background */}
+            <div className="absolute inset-0 bg-vox-secondary/5 opacity-50 pointer-events-none" />
+            <div className="absolute -top-24 -left-24 w-48 h-48 bg-vox-primary/10 blur-[60px] rounded-full" />
             
-            <div className="relative space-y-10">
+            <div className="relative space-y-6">
               <div className="flex items-center justify-between px-2">
-                <div className="flex items-center gap-6">
-                  <div className="w-16 h-16 rounded-3xl bg-vox-secondary/10 flex items-center justify-center border border-vox-secondary/30 shadow-[0_0_30px_rgba(112,0,255,0.1)]">
-                    <Sparkles size={32} className="text-vox-secondary text-glow-secondary" />
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-vox-secondary/20">
+                    <Sparkles size={16} className="text-vox-secondary" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-black text-white uppercase tracking-[0.6em] font-display italic leading-none">System Architect</h3>
-                    <p className="text-[10px] text-white/30 uppercase font-black tracking-[0.4em] mt-2 italic flex items-center gap-2">
-                       <Cpu size={12} className="text-vox-primary" />
-                       Neural_Synthesis_v4_Omega
-                    </p>
+                    <h3 className="text-xs font-black text-white uppercase tracking-[0.3em]">AI OS Architect</h3>
+                    <p className="text-[9px] text-white/30 uppercase font-bold tracking-widest mt-0.5">Synthesizing System Logic</p>
                   </div>
                 </div>
                 
-                <div className="flex items-center gap-8">
-                   <div className="hidden sm:flex items-center gap-3 px-5 py-2.5 rounded-full bg-white/5 border border-vox-border shadow-2xl">
-                      <Zap size={14} className="text-vox-primary" />
-                      <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.3em] leading-none italic">Status: Cognizant</span>
+                <div className="flex items-center gap-4">
+                   <div className="hidden sm:flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10">
+                      <Zap size={10} className="text-vox-primary" />
+                      <span className="text-[10px] font-black text-white/40 uppercase tracking-widest leading-none">GPT-4.0 Equivalent</span>
                    </div>
                    <button 
                     onClick={() => setIsOpen(false)}
-                    className="p-4 rounded-full bg-white/5 hover:bg-vox-primary/20 text-white/20 hover:text-vox-primary transition-all border border-vox-border group/close"
+                    className="p-2 rounded-full hover:bg-white/10 text-white/20 transition-all"
                    >
-                     <Zap className="rotate-45 group-hover/close:rotate-90 transition-transform" size={20} />
+                     <Zap className="rotate-45" size={14} />
                    </button>
                 </div>
               </div>
 
-              <div className="relative group/area">
+              <div className="relative">
                 <textarea
                   autoFocus
                   value={aiPrompt}
@@ -93,33 +90,32 @@ export const CommandBar = () => {
                       handleGenerate();
                     }
                   }}
-                  placeholder="Define neural logic directive..."
-                  className="w-full bg-black/40 border border-vox-border rounded-[2rem] p-10 text-2xl text-white placeholder:text-white/10 focus:outline-none focus:border-vox-primary/40 focus:ring-1 focus:ring-vox-primary/20 resize-none h-48 transition-all font-medium leading-tight tracking-tighter"
+                  placeholder="Describe the sovereign intelligence network to be synthesized..."
+                  className="w-full bg-white/5 border border-white/10 rounded-2xl p-5 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-vox-secondary/50 resize-none h-32 transition-all font-medium leading-relaxed"
                 />
-                
-                <div className="absolute bottom-8 right-8 flex items-center gap-8">
-                   <span className="text-[10px] font-black text-white/20 uppercase tracking-[0.8em] hidden sm:block italic font-display">Neural_Ready</span>
+                <div className="absolute bottom-4 right-4 flex items-center gap-4">
+                   <span className="text-[10px] font-black text-white/20 uppercase tracking-widest hidden sm:block">Press Enter to Synthesize</span>
                    <button
                     onClick={handleGenerate}
                     disabled={isGenerating || !aiPrompt.trim()}
                     className={cn(
-                      "w-20 h-20 rounded-3xl transition-all shadow-[0_20px_50px_rgba(0,0,0,0.5)] flex items-center justify-center",
+                      "p-3 rounded-xl transition-all shadow-lg",
                       isGenerating || !aiPrompt.trim() 
                         ? "bg-white/5 text-white/20 cursor-not-allowed" 
-                        : "bg-vox-primary text-vox-bg hover:scale-105 active:scale-95 shadow-[0_0_50px_rgba(0,229,255,0.4)]"
+                        : "bg-vox-secondary text-vox-bg hover:scale-105 active:scale-95 shadow-[0_0_20px_rgba(112,0,255,0.4)]"
                     )}
                   >
-                    {isGenerating ? <Loader2 size={32} className="animate-spin" /> : <Send size={32} className="ml-1" />}
+                    {isGenerating ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
                   </button>
                 </div>
               </div>
 
-              <div className="flex flex-wrap gap-4 px-2">
-                 {['Autonomous_Mesh', 'Neural_Pipeline', 'Logic_HUD_Synthesis'].map(tag => (
+              <div className="flex flex-wrap gap-2 px-2">
+                 {['Sovereign CAD Sync', 'Auto-Governance Mesh', 'Neural Load Balancer'].map(tag => (
                    <button 
                     key={tag}
-                    onClick={() => setAiPrompt(tag.replace(/_/g, ' '))}
-                    className="px-6 py-2.5 rounded-2xl bg-white/[0.01] border border-vox-border text-[9px] font-black text-white/30 uppercase tracking-[0.4em] hover:bg-vox-primary/10 hover:text-vox-primary hover:border-vox-primary/40 transition-all italic font-display"
+                    onClick={() => setAiPrompt(tag)}
+                    className="px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-[9px] font-black text-white/30 uppercase tracking-widest hover:bg-vox-primary/10 hover:text-vox-primary hover:border-vox-primary/30 transition-all"
                    >
                      {tag}
                    </button>
@@ -135,23 +131,22 @@ export const CommandBar = () => {
         <motion.button
           layoutId="command-bar"
           onClick={() => setIsOpen(true)}
-          whileHover={{ scale: 1.05, y: -4 }}
+          whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          className="flex items-center gap-10 px-12 py-6 bg-vox-panel/60 backdrop-blur-3xl border border-vox-border rounded-[2.5rem] shadow-[0_40px_100px_rgba(0,0,0,0.8)] group hover:border-vox-primary/40 transition-all relative overflow-hidden"
+          className="flex items-center gap-3 sm:gap-4 px-4 sm:px-8 py-2.5 sm:py-4 bg-vox-bg/80 backdrop-blur-xl border border-white/10 rounded-full shadow-[0_10px_30px_rgba(0,0,0,0.5)] group hover:border-vox-secondary/50 transition-all font-sans"
         >
-          <div className="absolute inset-0 bg-gradient-to-tr from-vox-primary/[0.02] to-transparent pointer-events-none" />
-          <div className="w-12 h-12 rounded-2xl bg-vox-secondary/10 group-hover:bg-vox-secondary/20 flex items-center justify-center transition-all border border-vox-secondary/20">
-            <Sparkles size={24} className="text-vox-secondary text-glow-secondary" />
+          <div className="p-1.5 sm:p-2 rounded-lg bg-vox-secondary/20 group-hover:bg-vox-secondary/40 transition-all">
+            <Sparkles size={14} className="text-vox-secondary" />
           </div>
-          <div className="flex flex-col items-start">
-             <span className="text-xl font-black text-white uppercase tracking-[0.4em] leading-none font-display italic">Initialize_Command</span>
-             <span className="text-[10px] font-black text-white/20 uppercase tracking-[0.6em] leading-none mt-2 italic">Neural OS v4_Omega</span>
+          <div className="flex flex-col items-start pr-0 sm:pr-4">
+             <span className="text-[8px] sm:text-[10px] font-black text-white uppercase tracking-[0.2em] sm:tracking-[0.3em] leading-none">AI Architect</span>
+             <span className="text-[7px] sm:text-[9px] font-bold text-white/30 uppercase tracking-widest leading-none mt-1">Synthesize</span>
           </div>
-          <div className="w-px h-12 bg-vox-border mx-4" />
-          <div className="flex items-center gap-3 text-white/20">
-             <kbd className="text-[11px] font-black tracking-[0.2em] bg-white/5 px-3 py-1.5 rounded-xl border border-white/5 uppercase">Cmd</kbd>
-             <span className="text-[12px] opacity-20 italic">/</span>
-             <kbd className="text-[11px] font-black tracking-[0.2em] bg-white/5 px-3 py-1.5 rounded-xl border border-white/5 uppercase">K</kbd>
+          <div className="hidden sm:block w-px h-8 bg-white/10 mx-2" />
+          <div className="hidden sm:flex items-center gap-1 text-white/20">
+             <kbd className="text-[9px] font-mono tracking-tighter bg-white/5 px-1.5 py-0.5 rounded border border-white/10 uppercase">Cmd</kbd>
+             <span className="text-[9px]">+</span>
+             <kbd className="text-[9px] font-mono tracking-tighter bg-white/5 px-1.5 py-0.5 rounded border border-white/10 uppercase">K</kbd>
           </div>
         </motion.button>
       )}

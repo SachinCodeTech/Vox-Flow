@@ -25,7 +25,8 @@ import {
   ShieldCheck,
   Braces,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Trash2
 } from 'lucide-react';
 import { useWorkflowStore } from '../store/useWorkflowStore';
 import { cn } from '../lib/utils';
@@ -57,6 +58,7 @@ const nodeIdList = [
     { label: 'JSON Map', icon: 'Braces', type: 'Action' },
     { label: 'Delay (5s)', icon: 'Clock', type: 'Action' },
     { label: 'Security Gate', icon: 'ShieldCheck', type: 'Action' },
+    { label: 'Process Data', icon: 'Database', type: 'Action' },
   ]},
   { group: 'AI & Automation', items: [
     { label: 'AI Classify', icon: 'AI', type: 'Action' },
@@ -74,24 +76,56 @@ const nodeIdList = [
 
 const templates = [
   { 
-    name: 'CAD Archival', 
+    name: 'CAD Approval Pipeline', 
     nodes: [
-      { id: 't1', type: 'trigger', data: { label: 'CADD Update', icon: 'Layers' }, position: { x: 100, y: 100 } },
-      { id: 'a1', type: 'action', data: { label: 'CAD Archive', icon: 'Zip' }, position: { x: 350, y: 100 } },
-      { id: 'a2', type: 'action', data: { label: 'VoxDrive Sync', icon: 'Transfer' }, position: { x: 600, y: 100 } }
+      { id: 't1', type: 'trigger', data: { label: 'Junior Upload', icon: 'Upload' }, position: { x: 50, y: 150 } },
+      { id: 'a1', type: 'action', data: { label: 'Senior Review', icon: 'Search' }, position: { x: 300, y: 150 } },
+      { id: 'a2', type: 'action', data: { label: 'Principal Approval', icon: 'ShieldCheck' }, position: { x: 550, y: 150 } },
+      { id: 'a3', type: 'action', data: { label: 'Notify Consultant', icon: 'Send' }, position: { x: 800, y: 150 } }
     ],
     edges: [
-      { id: 'e1', source: 't1', target: 'a1', animated: true },
-      { id: 'e2', source: 'a1', target: 'a2', animated: true }
+      { id: 'e1', source: 't1', target: 'a1', animated: true, type: 'neural' },
+      { id: 'e2', source: 'a1', target: 'a2', animated: true, type: 'neural' },
+      { id: 'e3', source: 'a2', target: 'a3', animated: true, type: 'neural' }
     ]
   },
   { 
-    name: 'Team Alert', 
+    name: 'Site Coordination Sync', 
     nodes: [
-      { id: 't1', type: 'trigger', data: { label: 'Form Entry', icon: 'FileText' }, position: { x: 100, y: 100 } },
-      { id: 'a1', type: 'action', data: { label: 'Slack Notify', icon: 'Message' }, position: { x: 350, y: 100 } }
+      { id: 't1', type: 'trigger', data: { label: 'Weekly Update', icon: 'Clock' }, position: { x: 50, y: 150 } },
+      { id: 'a1', type: 'action', data: { label: 'Fetch Site Logs', icon: 'Database' }, position: { x: 300, y: 150 } },
+      { id: 'a2', type: 'action', data: { label: 'Teams Sync', icon: 'Users' }, position: { x: 550, y: 150 } }
     ],
-    edges: [{ id: 'e1', source: 't1', target: 'a1', animated: true }]
+    edges: [
+      { id: 'e1', source: 't1', target: 'a1', animated: true, type: 'neural' },
+      { id: 'e2', source: 'a1', target: 'a2', animated: true, type: 'neural' }
+    ]
+  },
+  { 
+    name: 'CAD Intelligence Mesh', 
+    nodes: [
+      { id: 't1', type: 'trigger', data: { label: 'CADD Update', icon: 'Layers' }, position: { x: 50, y: 150 } },
+      { id: 'a1', type: 'action', data: { label: 'Layer Map', icon: 'Layers' }, position: { x: 300, y: 150 } },
+      { id: 'a2', type: 'action', data: { label: 'AI Classify', icon: 'AI' }, position: { x: 550, y: 150 } },
+      { id: 'a3', type: 'action', data: { label: 'CAD Archive', icon: 'Zip' }, position: { x: 800, y: 150 } }
+    ],
+    edges: [
+      { id: 'e1', source: 't1', target: 'a1', animated: true, type: 'neural' },
+      { id: 'e2', source: 'a1', target: 'a2', animated: true, type: 'neural' },
+      { id: 'e3', source: 'a2', target: 'a3', animated: true, type: 'neural' }
+    ]
+  },
+  { 
+    name: 'Ops Monitoring Core', 
+    nodes: [
+      { id: 't1', type: 'trigger', data: { label: 'Cloud Event', icon: 'Activity' }, position: { x: 50, y: 300 } },
+      { id: 'a1', type: 'action', data: { label: 'Security Gate', icon: 'ShieldCheck' }, position: { x: 300, y: 300 } },
+      { id: 'a2', type: 'action', data: { label: 'Slack Notify', icon: 'Message' }, position: { x: 550, y: 300 } }
+    ],
+    edges: [
+      { id: 'e1', source: 't1', target: 'a1', animated: true, type: 'neural' },
+      { id: 'e2', source: 'a1', target: 'a2', animated: true, type: 'neural' }
+    ]
   }
 ];
 
@@ -126,7 +160,25 @@ export const Sidebar = ({ isCollapsed, onToggle }: { isCollapsed: boolean, onTog
   const { 
     setNodes, 
     setEdges, 
+    nodes,
+    edges,
+    workspaces, 
+    currentWorkspaceId, 
+    switchWorkspace, 
+    deleteWorkspace,
+    addWorkspace,
+    addTemplate,
+    agents,
+    updateAgent
   } = useWorkflowStore();
+
+  const handleCreateTemplate = () => {
+    const name = prompt('Blueprint Identifier:');
+    if (name) {
+      addTemplate({ name, nodes, edges });
+      alert('Neural Blueprint Archived to Vault');
+    }
+  };
 
   const applyTemplate = (template: typeof templates[0]) => {
     setNodes(template.nodes as any);
@@ -136,20 +188,24 @@ export const Sidebar = ({ isCollapsed, onToggle }: { isCollapsed: boolean, onTog
   const filteredNodeList = nodeIdList.map(group => ({
     ...group,
     items: group.items.filter(item => 
-      item.label.toLowerCase().includes(search.toLowerCase())
+      item.label.toLowerCase().includes(search.toLowerCase()) ||
+      item.type.toLowerCase().includes(search.toLowerCase()) ||
+      item.icon.toLowerCase().includes(search.toLowerCase()) ||
+      group.group.toLowerCase().includes(search.toLowerCase())
     )
   })).filter(group => group.items.length > 0);
 
   const onDragStart = (event: React.DragEvent, nodeData: any) => {
+    // Specifically for React Flow drag-and-drop
     event.dataTransfer.setData('application/reactflow', nodeData.type);
     event.dataTransfer.setData('application/label', nodeData.label);
     event.dataTransfer.setData('application/icon', nodeData.icon);
-    event.dataTransfer.dropEffect = 'move';
+    event.dataTransfer.effectAllowed = 'move';
   };
 
   const handleNodeClick = (nodeData: any) => {
     const { addNode } = useWorkflowStore.getState();
-    const id = `${nodeData.type.toLowerCase()}_${Math.random().toString(36).substr(2, 9)}`;
+    const id = `${nodeData.type.toLowerCase()}_${Date.now()}`;
     const position = { x: 400 + (Math.random() - 0.5) * 100, y: 300 + (Math.random() - 0.5) * 100 };
     
     addNode({
@@ -164,43 +220,154 @@ export const Sidebar = ({ isCollapsed, onToggle }: { isCollapsed: boolean, onTog
     <aside className="w-full h-full bg-vox-bg/20 flex flex-col z-10 overflow-hidden">
       {/* Top Header / Toggle */}
       <div className={cn(
-        "p-4 border-b border-vox-border flex items-center transition-all",
+        "p-4 border-b border-vox-border flex items-center transition-all bg-black/20",
         isCollapsed ? "justify-center" : "justify-between"
       )}>
         {!isCollapsed && (
           <div className="flex flex-col">
             <span className="text-[10px] font-black text-white uppercase tracking-[0.4em]">Engine Forge</span>
-            <span className="text-[7px] font-black text-vox-primary/50 uppercase tracking-[0.2em]">Operational Library</span>
+            <div className="flex items-center gap-2">
+               <span className="w-1 h-1 rounded-full bg-vox-primary animate-ping" />
+               <span className="text-[7px] font-black text-vox-primary/50 uppercase tracking-[0.2em]">Operational Library • ACTIVE</span>
+            </div>
           </div>
         )}
         <button 
           onClick={onToggle}
-          className="p-2 rounded-lg bg-white/5 hover:bg-vox-primary/10 text-white/30 hover:text-vox-primary transition-all"
+          className="p-2 rounded-lg bg-white/5 hover:bg-vox-primary/10 text-white/40 hover:text-vox-primary transition-all active:scale-90"
         >
           {isCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
         </button>
       </div>
 
       {!isCollapsed && (
+        <div className="p-4 border-b border-vox-border grid grid-cols-3 gap-2 bg-black/40">
+           {[
+             { id: 'canvas', icon: Layers, label: 'Build' },
+             { id: 'dashboard', icon: Activity, label: 'Ops' },
+             { id: 'neural', icon: SearchCode, label: 'Map' },
+             { id: 'governance', icon: ShieldCheck, label: 'Gov' },
+             { id: 'cosmos', icon: Globe, label: 'Cosm' },
+             { id: 'advisor', icon: Users, label: 'Intel' }
+           ].map((nav) => (
+             <button
+               key={nav.id}
+               onClick={() => useWorkflowStore.getState().setViewMode(nav.id as any)}
+               className={cn(
+                 "flex flex-col items-center justify-center gap-1.5 p-2 rounded-xl border transition-all group",
+                 useWorkflowStore.getState().viewMode === nav.id
+                   ? "bg-vox-primary/10 border-vox-primary/40 text-vox-primary shadow-[0_4px_15px_rgba(0,229,255,0.1)]"
+                   : "bg-white/[0.02] border-white/5 hover:border-white/20 text-white/30 hover:text-white"
+               )}
+             >
+               <nav.icon size={12} className={cn(useWorkflowStore.getState().viewMode === nav.id && "animate-pulse")} />
+               <span className="text-[7px] font-black uppercase tracking-widest">{nav.label}</span>
+             </button>
+           ))}
+        </div>
+      )}
+
+      {!isCollapsed && (
+        <div className="px-4 py-2 bg-vox-primary/5 border-b border-vox-primary/20 flex items-center justify-between">
+           <div className="flex items-center gap-2 overflow-hidden">
+              <Activity size={10} className="text-vox-primary shrink-0 animate-pulse" />
+              <marquee className="text-[8px] font-black text-vox-primary/60 uppercase tracking-widest whitespace-nowrap italic pointer-events-none">
+                 NEURAL MESH SYNCHRONIZED • ALL SYSTEMS NOMINAL • DATA SOVEREIGNTY PROTOCOL ACTIVE • [DEPT: ARCHITECTURE] • UPTIME: 99.987% • STANDBY FOR NEW INSTRUCTIONS...
+              </marquee>
+           </div>
+        </div>
+      )}
+
+      {!isCollapsed && (
         <div className="p-4 border-b border-vox-border bg-white/[0.02]">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-white/20" size={12} />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" size={12} />
             <input 
               type="text" 
               placeholder="Search components..." 
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full bg-black/40 border border-vox-border rounded-lg py-2 pl-9 pr-4 text-[10px] text-white focus:outline-none focus:border-vox-primary/30 transition-all placeholder:text-white/10 uppercase font-black tracking-widest"
+              className="w-full bg-black/40 border border-vox-border rounded-lg py-2.5 pl-9 pr-4 text-[10px] text-white focus:outline-none focus:border-vox-primary/50 transition-all placeholder:text-white/30 uppercase font-black tracking-widest shadow-inner sm:text-xs"
             />
           </div>
         </div>
       )}
 
-      <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-6 pb-20">
+      <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-8 pb-20">
+        {/* Saved Workflows (The Vault) */}
+        {!isCollapsed && search === '' && (
+          <div className="space-y-4">
+             <div className="flex items-center justify-between px-1">
+                <h3 className="text-[9px] font-black text-vox-primary uppercase tracking-[0.3em]">Workflow Vault</h3>
+                <span className="text-[7px] font-black text-white/30 uppercase tracking-widest">Persistence Layer</span>
+             </div>
+             <div className="space-y-2">
+                {workspaces.map(ws => (
+                  <div key={ws.id} className="group relative">
+                    <button 
+                      onClick={() => switchWorkspace(ws.id)}
+                      className={cn(
+                        "w-full p-3 flex items-center gap-3 rounded-xl border transition-all text-left overflow-hidden",
+                        currentWorkspaceId === ws.id 
+                          ? "bg-vox-primary/10 border-vox-primary/40 shadow-[0_0_15px_rgba(0,229,255,0.1)]" 
+                          : "bg-white/[0.02] border-white/5 hover:border-white/20 hover:bg-white/[0.04]"
+                      )}
+                    >
+                      <div className={cn(
+                        "w-8 h-8 rounded-lg flex items-center justify-center transition-all",
+                        currentWorkspaceId === ws.id ? "bg-vox-primary text-vox-bg" : "bg-white/10 text-white/60 group-hover:text-vox-primary"
+                      )}>
+                        <Database size={14} />
+                      </div>
+                      <div className="flex flex-col min-w-0 pr-8">
+                        <span className={cn(
+                          "text-[10px] font-black uppercase tracking-widest truncate",
+                          currentWorkspaceId === ws.id ? "text-white" : "text-white/80"
+                        )}>{ws.name}</span>
+                        <span className="text-[7px] font-black text-white/40 uppercase tracking-tighter italic">Last modified: {new Date(ws.lastUpdated).toLocaleDateString()}</span>
+                      </div>
+                    </button>
+                    {workspaces.length > 1 && (
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (confirm('Decommission this neural repository?')) {
+                            deleteWorkspace(ws.id);
+                          }
+                        }}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-lg bg-red-500/0 hover:bg-red-500/20 text-white/0 group-hover:text-red-400 transition-all border border-transparent hover:border-red-500/50"
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    )}
+                  </div>
+                ))}
+             </div>
+             <button 
+              onClick={() => {
+                const name = prompt('Enter Workflow Name:');
+                if (name) addWorkspace(name);
+              }}
+              className="w-full py-2.5 rounded-xl border border-dashed border-white/10 hover:border-vox-primary/40 hover:bg-vox-primary/5 text-[9px] font-black text-white/30 hover:text-vox-primary transition-all uppercase tracking-[0.2em]"
+             >
+                + Initialize New Workflow
+             </button>
+          </div>
+        )}
+
         {/* Templates Rail */}
         {!isCollapsed && search === '' && (
           <div className="space-y-4">
-            <h3 className="text-[8px] font-black text-white/20 uppercase tracking-[0.3em] px-1">Active Blueprints</h3>
+             <div className="flex items-center justify-between px-1">
+                <h3 className="text-[9px] font-black text-white/40 uppercase tracking-[0.3em] italic">Enterprise Blueprints</h3>
+                <button 
+                  onClick={handleCreateTemplate}
+                  className="p-1 rounded-md bg-vox-primary/10 border border-vox-primary/20 text-vox-primary hover:bg-vox-primary hover:text-vox-bg transition-all"
+                  title="Archive Current Pattern"
+                >
+                  <Share2 size={10} />
+                </button>
+             </div>
             <div className="space-y-1">
               {templates.map(t => (
                 <button 
@@ -208,13 +375,67 @@ export const Sidebar = ({ isCollapsed, onToggle }: { isCollapsed: boolean, onTog
                   onClick={() => applyTemplate(t)}
                   className="w-full group p-2.5 flex items-center gap-3 rounded-lg bg-white/[0.02] border border-transparent hover:border-vox-primary/20 hover:bg-vox-primary/5 transition-all text-left"
                 >
-                  <div className="w-6 h-6 rounded flex items-center justify-center bg-white/5 text-white/30 group-hover:text-vox-primary transition-all">
+                  <div className="w-6 h-6 rounded flex items-center justify-center bg-white/10 text-white/50 group-hover:text-vox-primary transition-all">
                     <Zap size={12} />
                   </div>
-                  <span className="text-[9px] font-black text-white/50 group-hover:text-white uppercase tracking-widest truncate">{t.name}</span>
+                  <span className="text-[9px] font-black text-white/70 group-hover:text-white uppercase tracking-widest truncate">{t.name}</span>
                 </button>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* Agent Configuration (New Section) */}
+        {!isCollapsed && (
+          <div className="space-y-4 pt-4 border-t border-white/5">
+             <div className="flex items-center justify-between px-1">
+                <h3 className="text-[9px] font-black text-vox-primary uppercase tracking-[0.3em]">Agent Sync</h3>
+                <span className="text-[7px] font-mono text-white/20">CONFIG_MODE</span>
+             </div>
+             <div className="space-y-4">
+                {agents.map(agent => (
+                  <div key={agent.id} className="p-4 rounded-2xl bg-white/[0.01] border border-white/5 space-y-3">
+                     <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-vox-primary h-px bg-vox-primary/20 flex-1" />
+                        <span className="text-[7px] font-mono text-white/30 uppercase">{agent.id}</span>
+                     </div>
+                     <div className="space-y-2">
+                        <input 
+                          type="text" 
+                          value={agent.name}
+                          onChange={(e) => updateAgent(agent.id, { name: e.target.value })}
+                          className="w-full bg-black/40 border border-white/5 rounded-lg py-1.5 px-3 text-[9px] font-black text-white focus:border-vox-primary/40 transition-all uppercase"
+                          placeholder="Agent Name"
+                        />
+                        <input 
+                          type="text" 
+                          value={agent.role}
+                          onChange={(e) => updateAgent(agent.id, { role: e.target.value })}
+                          className="w-full bg-black/40 border border-white/5 rounded-lg py-1.5 px-3 text-[9px] font-black text-white/40 focus:border-vox-primary/40 transition-all uppercase"
+                          placeholder="Agent Role"
+                        />
+                     </div>
+                  </div>
+                ))}
+                <button 
+                  onClick={() => {
+                    const name = prompt('Neural Agent Identity:');
+                    if (name) {
+                      const { addAgent } = useWorkflowStore.getState();
+                      addAgent({
+                        id: `agent-${Date.now()}`,
+                        name,
+                        role: 'General Purpose Intelligence',
+                        status: 'idle',
+                        lastAction: 'Awaiting deployment...'
+                      });
+                    }
+                  }}
+                  className="w-full py-2.5 rounded-xl border border-dashed border-vox-primary/20 hover:border-vox-primary hover:bg-vox-primary/5 text-[8px] font-black text-vox-primary/40 hover:text-vox-primary transition-all uppercase tracking-[0.2em]"
+                >
+                  + Initialize Intelligence Node
+                </button>
+             </div>
           </div>
         )}
 
@@ -245,12 +466,12 @@ export const Sidebar = ({ isCollapsed, onToggle }: { isCollapsed: boolean, onTog
                   >
                     <div className={cn(
                       "rounded-lg flex items-center justify-center transition-all group-hover:scale-110",
-                      isCollapsed ? "w-8 h-8 bg-white/5 text-white/40 group-hover:text-vox-primary" : "w-10 h-10 bg-white/5 text-white/20 group-hover:text-vox-primary"
+                      isCollapsed ? "w-8 h-8 bg-white/10 text-white/60 group-hover:text-vox-primary" : "w-10 h-10 bg-white/10 text-white/40 group-hover:text-vox-primary"
                     )}>
                       <Icon size={isCollapsed ? 14 : 18} />
                     </div>
                     {!isCollapsed && (
-                      <span className="text-[8px] text-white/40 group-hover:text-white transition-colors font-black uppercase tracking-[0.1em] text-center leading-none">
+                      <span className="text-[8px] text-white/60 group-hover:text-white transition-colors font-black uppercase tracking-[0.1em] text-center leading-none">
                         {node.label}
                       </span>
                     )}

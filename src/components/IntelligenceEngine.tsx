@@ -9,10 +9,26 @@ const SAMPLE_INSIGHTS: any[] = [
 ];
 
 const AGENT_ACTIONS: Record<string, string[]> = {
-  'archive-001': ['Compressing old assets', 'Calculating redundancy', 'Pruning temp folders'],
-  'coord-001': ['Scanning calendar syncs', 'Predicting conflict', 'Optimizing buffer times'],
-  'cad-001': ['Verifying Layer 0 standards', 'Checking XREF paths', 'Summarizing revision E'],
-  'guard-001': ['Monitoring edge traffic', 'Verifying auth keys', 'Running vulnerability sweep']
+  'archive-001': [
+    'Compressed 5TB CAD archive data at [TS] UTC',
+    'Defragmented NAS Sector 7-B - 100% Integrity',
+    'Optimized Archival Vault: Reduced footprint by 12%'
+  ],
+  'coord-001': [
+    'Resolved 4 scheduling conflicts in Arch Dept at [TS] UTC',
+    'Predicted optimal meeting buffer for Team 3 sync',
+    'Synchronized Global Mirror with Frankfurt node'
+  ],
+  'cad-001': [
+    'Validated Layer 0 compliance for Project_Alpha at [TS] UTC',
+    'Reformatted 120 XREFs to enterprise standards',
+    'Generated BIM LOD-400 snapshot for structural audit'
+  ],
+  'guard-001': [
+    'Neutralized perimeter breach attempt at [TS] UTC',
+    'Verified 42 endpoint encryption hashes',
+    'Audit complete: No policy drift detected in Core-Mesh'
+  ]
 };
 
 const SAMPLE_EVENTS: any[] = [
@@ -66,9 +82,12 @@ export const IntelligenceEngine = () => {
     // 3. Simulating Agent Activity (Every 8s)
     const agentInterval = setInterval(() => {
       const agent = agents[Math.floor(Math.random() * agents.length)];
-      const possibleActions = AGENT_ACTIONS[agent.id] || ['Processing...'];
-      const action = possibleActions[Math.floor(Math.random() * possibleActions.length)];
+      const possibleActions = AGENT_ACTIONS[agent.id] || ['Processing dynamic logic at [TS] UTC'];
+      let action = possibleActions[Math.floor(Math.random() * possibleActions.length)];
       
+      const ts = new Date().toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      action = action.replace('[TS]', ts);
+
       updateAgentStatus(agent.id, 'executing', action);
       
       setTimeout(() => {
@@ -81,6 +100,10 @@ export const IntelligenceEngine = () => {
       if (Math.random() > 0.4) {
         const event = SAMPLE_EVENTS[Math.floor(Math.random() * SAMPLE_EVENTS.length)];
         addEvent(event);
+        
+        // Also update health snapshot history
+        const { health, addHealthSnap } = useWorkflowStore.getState();
+        addHealthSnap(health);
       }
     }, 15000);
 

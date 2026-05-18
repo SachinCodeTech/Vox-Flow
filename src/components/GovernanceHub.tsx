@@ -12,12 +12,16 @@ import {
   CheckCircle2,
   Activity,
   Play,
-  Cpu
+  Cpu,
+  Users,
+  Building2,
+  ChevronRight,
+  UserCheck
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 export const GovernanceHub = () => {
-  const { policies, simulations, events, updatePolicyStatus, runSimulation } = useWorkflowStore();
+  const { policies, simulations, events, updatePolicyStatus, runSimulation, organization } = useWorkflowStore();
 
   const handleSimulateStaffing = () => {
     runSimulation({
@@ -80,8 +84,20 @@ export const GovernanceHub = () => {
                  <motion.div 
                    key={policy.id}
                    whileHover={{ y: -1 }}
-                   className="p-5 rounded-[2rem] bg-white/[0.02] border border-white/5 hover:border-vox-secondary/30 transition-all group"
+                   className="p-5 rounded-[2rem] bg-white/[0.02] border border-white/5 hover:border-vox-secondary/30 transition-all group relative overflow-hidden"
                  >
+                    {/* Compliance Progress Meter */}
+                    <div className="absolute top-0 right-0 w-full h-0.5 bg-white/5">
+                       <motion.div 
+                        initial={{ width: 0 }}
+                        animate={{ width: policy.status === 'active' ? '94%' : '62%' }}
+                        className={cn(
+                          "h-full transition-all duration-1000",
+                          policy.status === 'active' ? "bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.5)]" : "bg-vox-secondary shadow-[0_0_8px_rgba(255,45,85,0.5)]"
+                        )}
+                       />
+                    </div>
+
                     <div className="flex items-center justify-between mb-3">
                        <div className={cn(
                          "p-2.5 rounded-xl bg-white/5",
@@ -89,14 +105,20 @@ export const GovernanceHub = () => {
                        )}>
                          <ShieldCheck size={18} />
                        </div>
-                       <div className={cn(
-                         "px-2 py-0.5 rounded-full text-[7px] font-black uppercase tracking-widest border",
-                         policy.severity === 'critical' ? "border-red-400/20 text-red-400 bg-red-400/5" : "border-white/10 text-white/60 bg-white/5"
-                       )}>
-                         {policy.severity}
+                       <div className="flex flex-col items-end gap-1">
+                          <div className={cn(
+                            "px-2 py-0.5 rounded-full text-[7px] font-black uppercase tracking-widest border",
+                            policy.severity === 'critical' ? "border-red-400/20 text-red-400 bg-red-400/5" : "border-white/10 text-white/60 bg-white/5"
+                          )}>
+                            {policy.severity}
+                          </div>
+                          <span className="text-[6px] font-mono text-white/20 uppercase tracking-tighter">Drift: {policy.status === 'active' ? '0.04%' : '12.8%'}</span>
                        </div>
                     </div>
-                    <h3 className="text-[11px] font-black text-white uppercase tracking-widest mb-1">{policy.name}</h3>
+                    <div className="flex justify-between items-end mb-1">
+                       <h3 className="text-[11px] font-black text-white uppercase tracking-widest leading-none">{policy.name}</h3>
+                       <span className="text-[9px] font-black text-white/60">{policy.status === 'active' ? '94' : '62'}<span className="text-[6px] text-white/20 ml-0.5">SCORE</span></span>
+                    </div>
                     <div className="space-y-1 mb-4">
                        {policy.rules.map((rule, ri) => (
                          <div key={ri} className="flex items-center gap-2 text-[8px] text-white/40 font-bold uppercase tracking-tight">
@@ -246,6 +268,61 @@ export const GovernanceHub = () => {
            </div>
         </div>
       </div>
+
+      {/* Level 1-4: Organizational Infrastructure */}
+      <section className="space-y-8 pt-12 border-t border-white/5">
+         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div className="space-y-1">
+               <span className="text-[10px] font-black text-vox-primary uppercase tracking-[0.4em]">Structure Model v2.4</span>
+               <h2 className="text-4xl font-black text-white tracking-tighter italic uppercase underline decoration-vox-primary/30 underline-offset-8">
+                  Organizational <span className="text-vox-primary">Infrastructure</span>
+               </h2>
+            </div>
+            <div className="bg-white/5 p-4 rounded-2xl border border-white/10 flex items-center gap-4">
+               <Building2 size={24} className="text-vox-primary" />
+               <div className="flex flex-col">
+                  <span className="text-[8px] font-black text-white/40 uppercase tracking-widest">Master Entity</span>
+                  <span className="text-sm font-black text-white uppercase italic">{organization.name}</span>
+               </div>
+            </div>
+         </div>
+
+         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {organization.departments.map(dept => (
+               <div key={dept.id} className="p-6 rounded-[2.5rem] bg-white/[0.02] border border-white/5 hover:border-vox-primary/30 transition-all flex flex-col gap-6 group">
+                  <div className="flex justify-between items-start">
+                     <div className="w-12 h-12 rounded-2xl bg-vox-primary/5 flex items-center justify-center border border-vox-primary/10 group-hover:bg-vox-primary/20 transition-all">
+                        <Users size={20} className="text-vox-primary" />
+                     </div>
+                     <span className="text-[8px] font-mono text-white/20">ID: {dept.id}</span>
+                  </div>
+                  
+                  <div className="space-y-1">
+                     <h3 className="text-xs font-black text-white uppercase tracking-widest">{dept.name}</h3>
+                     <p className="text-[8px] text-white/30 font-black uppercase tracking-widest italic">{dept.roles.length} Registered Roles</p>
+                  </div>
+
+                  <div className="space-y-1.5">
+                     {dept.roles.slice(0, 3).map((role, ri) => (
+                        <div key={ri} className="flex items-center justify-between p-2 rounded-xl bg-white/[0.02] border border-white/5">
+                           <span className="text-[7px] font-black text-white/60 uppercase tracking-widest truncate max-w-[120px]">{role}</span>
+                           <UserCheck size={10} className="text-vox-primary/40" />
+                        </div>
+                     ))}
+                     {dept.roles.length > 3 && (
+                        <div className="text-center pt-1">
+                           <span className="text-[7px] font-black text-white/20 uppercase tracking-widest">+{dept.roles.length - 3} more roles</span>
+                        </div>
+                     )}
+                  </div>
+
+                  <button className="w-full py-3 rounded-2xl bg-white/5 border border-white/5 text-[8px] font-black text-white/40 uppercase tracking-widest hover:bg-vox-primary hover:text-vox-bg hover:border-vox-primary transition-all flex items-center justify-center gap-2">
+                     Manage Department <ChevronRight size={10} />
+                  </button>
+               </div>
+            ))}
+         </div>
+      </section>
     </div>
   );
 };

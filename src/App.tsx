@@ -20,6 +20,9 @@ import { Header } from './components/Header';
 import { SystemInfoPage } from './components/SystemInfoPage';
 import { PrivacyPolicy } from './components/PrivacyPolicy';
 import { AboutPage } from './components/AboutPage';
+import { UserGuide } from './components/UserGuide';
+import { NotFound } from './components/NotFound';
+import { CinematicOverlay } from './components/CinematicOverlay';
 
 export default function App() {
   const [showStartScreen, setShowStartScreen] = useState(true);
@@ -75,6 +78,7 @@ export default function App() {
 
   return (
     <div className="flex h-svh w-screen bg-vox-bg text-white font-sans selection:bg-vox-primary/30 selection:text-vox-primary overflow-hidden">
+      <CinematicOverlay />
       <AnimatePresence>
         {showStartScreen && <StartScreen onStart={handleStart} />}
       </AnimatePresence>
@@ -105,7 +109,7 @@ export default function App() {
         {/* Mode-based Content */}
         <div className="flex-1 flex overflow-hidden relative bg-[#050816]">
           <AnimatePresence mode="wait">
-            {viewMode === 'canvas' && (
+            {['canvas', 'dashboard', 'neural', 'governance', 'cosmos', 'advisor'].includes(viewMode) && (
               <motion.div
                 key="sidebar"
                 initial={{ width: 0, opacity: 0 }}
@@ -153,8 +157,12 @@ export default function App() {
                   <SystemInfoPage onBack={() => setViewMode('canvas')} />
                 ) : viewMode === 'privacy' ? (
                   <PrivacyPolicy onBack={() => setViewMode('canvas')} />
-                ) : (
+                ) : viewMode === 'guide' ? (
+                  <UserGuide onBack={() => setViewMode('canvas')} />
+                ) : viewMode === 'about' ? (
                   <AboutPage onBack={() => setViewMode('canvas')} />
+                ) : (
+                  <NotFound onBack={() => setViewMode('canvas')} />
                 )}
               </motion.div>
             </AnimatePresence>

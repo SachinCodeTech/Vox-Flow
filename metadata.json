@@ -1,6 +1,6 @@
 {
   "name": "VoxFlow Sentient",
-  "description": "VoxFlow Sentient is an AI-native institutional intelligence ecosystem. It orchestrates adaptive organizational consciousness, evolves sovereign governance protocols, and visualizes the enterprise cosmos via real-time cognitive meshes.",
+  "description": "VoxFlow is an AI-powered operations core for modular institutional synthesis. It features an adaptive neural logic mesh, real-time cognitive workflows, and autonomous governance protocols.",
   "requestFramePermissions": [],
-  "majorCapabilities": ["Institutional Consciousness", "Adaptive Governance", "Strategic Cognition Mesh", "Autonomous Evolution Engine"]
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API", "Institutional Consciousness", "Adaptive Governance", "Strategic Cognition Mesh", "Autonomous Evolution Engine"]
 }

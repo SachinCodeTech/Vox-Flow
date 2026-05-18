@@ -1,8 +1,35 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { Terminal, Cpu, Layers, Shield, Zap, ChevronLeft, Globe, Activity } from 'lucide-react';
+import { Terminal, Cpu, Layers, Shield, Zap, ChevronLeft, Globe, Activity, Key, CheckCircle2, AlertCircle } from 'lucide-react';
+import { useWorkflowStore } from '../store/useWorkflowStore';
+import { cn } from '../lib/utils';
 
 export const SystemInfoPage = ({ onBack }: { onBack: () => void }) => {
+  const { geminiApiKey, setGeminiApiKey } = useWorkflowStore();
+  const [inputValue, setInputValue] = useState(geminiApiKey);
+  const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [errorMsg, setErrorMsg] = useState('');
+
+  const validateKey = (key: string) => {
+    if (!key) return "API Key is required";
+    if (!key.startsWith('AIza')) return "Invalid format: Must start with 'AIza'";
+    if (key.length < 30) return "Key seems too short";
+    return null;
+  };
+
+  const handleSave = () => {
+    const error = validateKey(inputValue);
+    if (error) {
+      setStatus('error');
+      setErrorMsg(error);
+      return;
+    }
+    setGeminiApiKey(inputValue);
+    setStatus('success');
+    setErrorMsg('');
+    setTimeout(() => setStatus('idle'), 3000);
+  };
+
   return (
     <motion.div 
       initial={{ opacity: 0 }}
@@ -22,18 +49,66 @@ export const SystemInfoPage = ({ onBack }: { onBack: () => void }) => {
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-8">
           <div className="space-y-4">
             <h1 className="text-6xl font-black text-white tracking-tighter italic">VOXFLOW <br /><span className="text-vox-primary">SENTIENT OS.</span></h1>
-            <p className="text-lg text-white/40 font-medium tracking-tight">The ultimate neural orchestration engine for complex ecosystem management.</p>
+            <p className="text-lg text-white/80 font-medium tracking-tight">The ultimate neural orchestration engine for complex ecosystem management.</p>
           </div>
           <div className="flex gap-4">
-            <div className="px-6 py-3 rounded-2xl bg-white/5 border border-white/5 flex flex-col items-center">
-              <span className="text-[10px] text-white/20 font-black uppercase tracking-widest">Build</span>
+            <div className="px-6 py-3 rounded-2xl bg-white/10 border border-white/10 flex flex-col items-center">
+              <span className="text-[10px] text-white/40 font-black uppercase tracking-widest">Build</span>
               <span className="text-vox-primary font-black italic">v1.2.0-STABLE</span>
             </div>
-            <div className="px-6 py-3 rounded-2xl bg-white/5 border border-white/5 flex flex-col items-center">
-              <span className="text-[10px] text-white/20 font-black uppercase tracking-widest">Status</span>
-              <span className="text-vox-success font-black italic">OPTIMAL</span>
+            <div className="px-6 py-3 rounded-2xl bg-green-500/10 border border-green-500/20 flex flex-col items-center">
+              <span className="text-[10px] text-green-500/40 font-black uppercase tracking-widest">Status</span>
+              <span className="text-green-400 font-black italic">OPTIMAL</span>
             </div>
           </div>
+        </div>
+
+        {/* Gemini API Configuration */}
+        <div className="p-8 rounded-[2.5rem] bg-white/[0.03] border border-white/10 space-y-6">
+           <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-vox-primary/10 flex items-center justify-center border border-vox-primary/20">
+                <Key className="text-vox-primary" size={24} />
+              </div>
+              <div className="space-y-0.5">
+                 <h2 className="text-xl font-black text-white italic uppercase tracking-tight">Cognitive Bridge <span className="text-vox-primary">Config</span></h2>
+                 <p className="text-[10px] text-white/40 font-black uppercase tracking-widest">Connect your enterprise to Gemini Intelligence</p>
+              </div>
+           </div>
+
+           <div className="space-y-4">
+              <div className="relative">
+                 <input 
+                   type="password"
+                   value={inputValue}
+                   onChange={(e) => setInputValue(e.target.value)}
+                   placeholder="ENTER_GEMINI_API_KEY_AIza..."
+                   className={cn(
+                     "w-full bg-black/40 border rounded-2xl py-4 pl-6 pr-32 text-sm font-mono text-vox-primary focus:outline-none transition-all placeholder:text-white/10",
+                     status === 'error' ? "border-red-500/50" : "border-white/10 focus:border-vox-primary/50"
+                   )}
+                 />
+                 <button 
+                   onClick={handleSave}
+                   className="absolute right-2 top-2 bottom-2 px-6 rounded-xl bg-vox-primary text-vox-bg text-[10px] font-black uppercase tracking-widest hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50"
+                 >
+                    Inject Key
+                 </button>
+              </div>
+
+              {status === 'error' && (
+                <div className="flex items-center gap-2 text-red-400 px-2">
+                   <AlertCircle size={14} />
+                   <span className="text-[10px] font-black uppercase tracking-wider">{errorMsg}</span>
+                </div>
+              )}
+
+              {status === 'success' && (
+                <div className="flex items-center gap-2 text-green-400 px-2">
+                   <CheckCircle2 size={14} />
+                   <span className="text-[10px] font-black uppercase tracking-wider">Neural Connection Established</span>
+                </div>
+              )}
+           </div>
         </div>
 
         <div className="grid md:grid-cols-3 gap-6">

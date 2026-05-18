@@ -86,17 +86,25 @@
 
 /* React Flow Theming */
 .react-flow__edge-path {
-  stroke: rgba(0, 229, 255, 0.15);
-  stroke-width: 1.5;
+  stroke-width: 3;
   transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.react-flow__edge.animated .react-flow__edge-path {
+.react-flow__connection-path {
   stroke: var(--color-vox-primary);
+  stroke-width: 3;
+  stroke-dasharray: 5, 5;
+  filter: drop-shadow(0 0 8px var(--color-vox-primary));
+}
+
+.react-flow__edge.animated .react-flow__edge-path {
   stroke-dasharray: 8, 12;
   animation: flowLine 3s linear infinite;
-  stroke-width: 2;
-  filter: drop-shadow(0 0 8px var(--color-vox-primary));
+}
+
+.react-flow__node.selected .node-card {
+  border-color: var(--color-vox-primary) !important;
+  box-shadow: 0 0 50px rgba(0, 229, 255, 0.2) !important;
 }
 
 @keyframes flowLine {

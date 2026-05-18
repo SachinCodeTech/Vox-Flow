@@ -9,6 +9,7 @@ export const CommandBar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [aiPrompt, setAiPrompt] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [lastGenResult, setLastGenResult] = useState<string | null>(null);
   const { setNodes, setEdges } = useWorkflowStore();
 
   React.useEffect(() => {
@@ -16,6 +17,7 @@ export const CommandBar = () => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
         setIsOpen(prev => !prev);
+        setLastGenResult(null);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -25,14 +27,21 @@ export const CommandBar = () => {
   const handleGenerate = async () => {
     if (!aiPrompt.trim()) return;
     setIsGenerating(true);
+    setLastGenResult(null);
     try {
       const workflow = await generateWorkflow(aiPrompt);
-      setNodes(workflow.nodes);
-      setEdges(workflow.edges);
+      if (workflow.nodes && workflow.nodes.length > 0) {
+        setNodes(workflow.nodes);
+        setEdges(workflow.edges || []);
+        setLastGenResult(`Success: Generated ${workflow.nodes.length} nodes and ${workflow.edges?.length || 0} edges.`);
+        setTimeout(() => setIsOpen(false), 2000);
+      } else {
+        setLastGenResult('Error: Could not synthesize valid logic.');
+      }
       setAiPrompt('');
-      setIsOpen(false);
     } catch (error) {
       console.error('AI Flow error:', error);
+      setLastGenResult('Critical Error: Neural link failure.');
     } finally {
       setIsGenerating(false);
     }
@@ -109,6 +118,30 @@ export const CommandBar = () => {
                   </button>
                 </div>
               </div>
+              
+              {lastGenResult && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className={cn(
+                    "px-4 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest flex flex-col gap-1 border shadow-xl backdrop-blur-md",
+                    lastGenResult.startsWith('Success') 
+                      ? "bg-vox-primary/10 text-vox-primary border-vox-primary/30" 
+                      : "bg-red-500/10 text-red-400 border-red-500/30"
+                  )}
+                >
+                  <div className="flex items-center gap-2">
+                    <div className={cn("w-1.5 h-1.5 rounded-full animate-pulse", lastGenResult.startsWith('Success') ? "bg-vox-primary" : "bg-red-500")} />
+                    <span className="opacity-60">Synthesis Engine:</span>
+                    <span>{lastGenResult}</span>
+                  </div>
+                  {lastGenResult.startsWith('Success') && (
+                    <div className="text-[8px] font-bold text-white/40 tracking-tighter mt-1 italic">
+                      Neural logic mesh integrated into current workspace repository.
+                    </div>
+                  )}
+                </motion.div>
+              )}
 
               <div className="flex flex-wrap gap-2 px-2">
                  {['Sovereign CAD Sync', 'Auto-Governance Mesh', 'Neural Load Balancer'].map(tag => (

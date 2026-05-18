@@ -12,33 +12,79 @@ import ReactFlow, {
 import 'reactflow/dist/style.css';
 import { useWorkflowStore } from '../store/useWorkflowStore';
 import { CustomNode } from './CustomNode';
+import { NeuralEdge } from './NeuralEdge';
+import { GroupNode } from './GroupNode';
+import { NodePropertiesPanel } from './NodePropertiesPanel';
+import { NodeContextMenu } from './NodeContextMenu';
 import { motion, AnimatePresence } from 'motion/react';
-import { Play, Save, Trash2, Cpu, Loader2, X, Terminal, ChevronUp, ChevronDown } from 'lucide-react';
+import { 
+  Play, 
+  Save, 
+  Trash2, 
+  Cpu, 
+  Loader2, 
+  X, 
+  Terminal, 
+  ChevronUp, 
+  ChevronDown, 
+  Activity, 
+  Radio, 
+  Undo2, 
+  Redo2, 
+  Layers
+} from 'lucide-react';
 import { cn } from '../lib/utils';
 
-const TerminalDrawer = ({ isExecuting }: { isExecuting: boolean }) => {
+const TerminalDrawer = ({ isExecuting, isExecutionMode }: { isExecuting: boolean; isExecutionMode: boolean }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [logs, setLogs] = useState<{ id: string, msg: string, type: 'info' | 'success' | 'warn' }[]>([
     { id: '1', msg: 'System initialized. Ready for operations.', type: 'info' }
   ]);
 
   useEffect(() => {
-    if (isExecuting) {
+    if (isExecuting || isExecutionMode) {
       const timestamp = new Date().toLocaleTimeString();
-      const newLogs = [
-        { id: `${Date.now()}-1`, msg: `[${timestamp}] INITIALIZING EXECUTION SEQUENCE...`, type: 'info' as const },
-        { id: `${Date.now()}-2`, msg: `[${timestamp}] VALIDATING NODE INTEGRITY...`, type: 'info' as const },
-        { id: `${Date.now()}-3`, msg: `[${timestamp}] SCANNING LINK ENCRYPTION...`, type: 'warn' as const },
-      ];
-      setLogs(prev => [...prev, ...newLogs]);
+      const newLogs = isExecuting 
+        ? [
+            { id: `${Date.now()}-1`, msg: `[${timestamp}] INITIALIZING EXECUTION SEQUENCE...`, type: 'info' as const },
+            { id: `${Date.now()}-2`, msg: `[${timestamp}] VALIDATING NODE INTEGRITY...`, type: 'info' as const },
+            { id: `${Date.now()}-3`, msg: `[${timestamp}] SCANNING LINK ENCRYPTION...`, type: 'warn' as const },
+          ]
+        : [
+            { id: `${Date.now()}-1`, msg: `[${timestamp}] CONTINUOUS MONITORING ACTIVE...`, type: 'info' as const },
+            { id: `${Date.now()}-2`, msg: `[${timestamp}] NO ANOMALIES DETECTED IN MESH.`, type: 'success' as const },
+          ];
+      
+      setLogs(prev => [...prev, ...newLogs].slice(-50));
 
-      const timer = setTimeout(() => {
-        const endTimestamp = new Date().toLocaleTimeString();
-        setLogs(prev => [...prev, { id: 'end', msg: `[${endTimestamp}] PIPELINE EXECUTION COMPLETE.`, type: 'success' as const }]);
-      }, 2000);
-      return () => clearTimeout(timer);
+      if (isExecuting) {
+        const timer = setTimeout(() => {
+          const endTimestamp = new Date().toLocaleTimeString();
+          setLogs(prev => [...prev, { id: `end-${Date.now()}`, msg: `[${endTimestamp}] PIPELINE EXECUTION COMPLETE.`, type: 'success' as const }]);
+        }, 2000);
+        return () => clearTimeout(timer);
+      }
     }
-  }, [isExecuting]);
+  }, [isExecuting, isExecutionMode]);
+
+  // Periodic Ambient Logs in Execution Mode
+  useEffect(() => {
+    if (isExecutionMode && !isExecuting) {
+      const interval = setInterval(() => {
+        const msgs = [
+          "HEARTBEAT_NOMINAL: 72BPM",
+          "NEURAL_LATENCY: 4ms",
+          "CACHE_PURGE_SUCCESSFUL",
+          "IDLE_AGENTS: SCANNING_REPOSITORY",
+          "ENCRYPTION_STRENGTH: 4096-BIT"
+        ];
+        const msg = msgs[Math.floor(Math.random() * msgs.length)];
+        const timestamp = new Date().toLocaleTimeString();
+        setLogs(prev => [...prev, { id: Date.now().toString(), msg: `[${timestamp}] ${msg}`, type: 'info' }].slice(-50));
+      }, 5000);
+      return () => clearInterval(interval);
+    }
+  }, [isExecutionMode, isExecuting]);
 
   return (
     <motion.div 
@@ -90,6 +136,11 @@ const TerminalDrawer = ({ isExecuting }: { isExecuting: boolean }) => {
 const nodeTypes = {
   trigger: CustomNode,
   action: CustomNode,
+  group: GroupNode,
+};
+
+const edgeTypes = {
+  neural: NeuralEdge,
 };
 
 export const FlowCanvas = () => {
@@ -109,6 +160,11 @@ export const FlowCanvas = () => {
     setNodes,
     isExecuting,
     setIsExecuting,
+    isExecutionMode,
+    toggleExecutionMode,
+    undo,
+    redo,
+    takeSnapshot,
     saveWorkflow,
     loadWorkflow,
     workspaces,
@@ -147,6 +203,16 @@ export const FlowCanvas = () => {
         e.preventDefault();
         handleSave();
       }
+      // Ctrl + Z: Undo
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+        e.preventDefault();
+        undo();
+      }
+      // Ctrl + Y: Redo
+      if ((e.ctrlKey || e.metaKey) && e.key === 'y') {
+        e.preventDefault();
+        redo();
+      }
       // Ctrl + R: Reset View (Fit)
       if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
         e.preventDefault();
@@ -177,7 +243,7 @@ export const FlowCanvas = () => {
       const label = event.dataTransfer.getData('application/label');
       const icon = event.dataTransfer.getData('application/icon');
 
-      if (typeof type === 'undefined' || !type) return;
+      if (!type) return;
 
       const position = reactFlowInstance?.screenToFlowPosition({
         x: event.clientX,
@@ -186,7 +252,7 @@ export const FlowCanvas = () => {
 
       const newNode = {
         id: `${type.toLowerCase()}-${Date.now()}`,
-        type: type === 'Trigger' ? 'trigger' : 'action',
+        type: type.toLowerCase(), // Ensure lowercase 'trigger' or 'action'
         position,
         data: { label, icon },
       };
@@ -220,16 +286,88 @@ export const FlowCanvas = () => {
   };
 
   const animatedEdges = React.useMemo(() => {
+    const active = isExecuting || isExecutionMode;
     return edges.map(edge => ({
       ...edge,
-      animated: isExecuting,
+      type: 'neural',
+      data: { isExecuting: active },
+      animated: true,
+      interactionWidth: 20,
+      markerEnd: {
+        type: 'arrowclosed' as any,
+        width: 15,
+        height: 15,
+        color: active ? '#00E5FF' : '#5DA9FF',
+      },
       style: { 
-        stroke: isExecuting ? 'var(--color-vox-primary)' : 'rgba(255, 255, 255, 0.1)',
-        strokeWidth: isExecuting ? 3 : 2,
-        filter: isExecuting ? 'drop-shadow(0 0 8px var(--color-vox-primary))' : 'none'
+        stroke: active ? '#00E5FF' : 'rgba(93, 169, 255, 0.4)',
+        strokeWidth: active ? 4 : 2,
       }
     }));
-  }, [edges, isExecuting]);
+  }, [edges, isExecuting, isExecutionMode]);
+
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+
+  const onNodesDelete = useCallback((deletedNodes: any[]) => {
+    if (deletedNodes.length > 0) {
+      setConfirmDelete(deletedNodes[0].id);
+    }
+  }, []);
+
+  const onNodeDragStop = useCallback(() => {
+    takeSnapshot();
+  }, [takeSnapshot]);
+
+  const handleClusterSelected = useCallback(() => {
+    const selectedNodes = nodes.filter(n => n.selected);
+    if (selectedNodes.length < 1) return;
+
+    takeSnapshot();
+
+    const minX = Math.min(...selectedNodes.map(n => n.position.x));
+    const minY = Math.min(...selectedNodes.map(n => n.position.y));
+    const maxX = Math.max(...selectedNodes.map(n => (n.position.x + (n.width || 250))));
+    const maxY = Math.max(...selectedNodes.map(n => (n.position.y + (n.height || 100))));
+
+    const padding = 60;
+    const groupId = `group-${Date.now()}`;
+    
+    // 1. Create the Group Node
+    const groupNode = {
+      id: groupId,
+      type: 'group',
+      position: { x: minX - padding, y: minY - padding },
+      style: { width: (maxX - minX) + padding * 2, height: (maxY - minY) + padding * 2 },
+      data: { label: 'NEURAL_CLUSTER' },
+    };
+
+    // 2. Update selected nodes to be children
+    const updatedNodes = nodes.map(n => {
+      if (n.selected) {
+        return {
+          ...n,
+          parentNode: groupId,
+          extent: 'parent' as const,
+          position: { 
+            x: n.position.x - (minX - padding), 
+            y: n.position.y - (minY - padding) 
+          },
+          selected: false
+        };
+      }
+      return n;
+    });
+
+    setNodes([groupNode, ...updatedNodes]);
+  }, [nodes, setNodes, takeSnapshot]);
+
+  const handleConfirmDelete = () => {
+    if (confirmDelete) {
+      const { deleteNode } = useWorkflowStore.getState();
+      deleteNode(confirmDelete);
+      setConfirmDelete(null);
+    }
+  };
 
   return (
     <div className="w-full h-full relative" ref={reactFlowWrapper}>
@@ -239,23 +377,109 @@ export const FlowCanvas = () => {
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
+        onNodeDragStop={onNodeDragStop}
+        onPaneClick={() => useWorkflowStore.getState().deselectNodes()}
         onInit={setReactFlowInstance}
         onDrop={onDrop}
         onDragOver={onDragOver}
         nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
         connectionMode={ConnectionMode.Loose}
         deleteKeyCode={['Backspace', 'Delete']}
+        onNodesDelete={onNodesDelete}
+        snapToGrid={true}
+        snapGrid={[16, 16]}
         fitView
         onlyRenderVisibleElements={true}
       >
-        <Background 
-          color="#00E5FF" 
-          gap={32} 
-          size={1} 
-          variant={BackgroundVariant.Lines} 
-          className="opacity-5"
-        />
-        
+          <Background 
+            color={isExecutionMode ? "#00E5FF" : "#5DA9FF"} 
+            gap={32} 
+            size={1} 
+            variant={BackgroundVariant.Lines} 
+            className={cn("transition-all duration-1000", isExecutionMode ? "opacity-10" : "opacity-5")}
+          />
+          
+          <NodePropertiesPanel />
+          <NodeContextMenu />
+          
+          {/* Floating Selection Actions */}
+          <AnimatePresence>
+            {nodes.filter(n => n.selected).length > 1 && (
+              <Panel position="top-center">
+                <motion.div
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  className="flex items-center gap-4 bg-vox-bg/95 backdrop-blur-3xl border border-vox-primary/40 px-6 py-3 rounded-2xl shadow-2xl mt-4"
+                >
+                   <div className="flex flex-col">
+                      <span className="text-[10px] font-black text-vox-primary uppercase tracking-[0.2em]">{nodes.filter(n => n.selected).length} Instances Selected</span>
+                      <span className="text-[7px] font-black text-white/30 uppercase tracking-widest italic">Neural Batch Operations</span>
+                   </div>
+                   <div className="h-8 w-px bg-white/10 mx-2" />
+                   <button 
+                    onClick={handleClusterSelected}
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-vox-primary/10 border border-vox-primary/30 text-vox-primary text-[10px] font-black uppercase hover:bg-vox-primary/20 transition-all"
+                   >
+                      <Layers size={14} />
+                      Cluster Selected
+                   </button>
+                   <button 
+                    onClick={() => {
+                      if (confirm(`Decommission ${nodes.filter(n => n.selected).length} neural instances?`)) {
+                        nodes.filter(n => n.selected).forEach(n => useWorkflowStore.getState().deleteNode(n.id));
+                      }
+                    }}
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-[10px] font-black uppercase hover:bg-red-500/20 transition-all"
+                   >
+                      <Trash2 size={14} />
+                      Batch Decommission
+                   </button>
+                </motion.div>
+              </Panel>
+            )}
+          </AnimatePresence>
+
+          {/* Deletion Confirmation Modal */}
+        <AnimatePresence>
+          {confirmDelete && (
+            <div className="absolute inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                className="w-full max-w-sm bg-vox-bg border border-vox-primary/30 p-8 rounded-3xl shadow-[0_0_50px_rgba(0,229,255,0.2)]"
+              >
+                <div className="flex flex-col items-center text-center space-y-6">
+                  <div className="w-16 h-16 rounded-2xl bg-vox-primary/10 flex items-center justify-center">
+                    <Trash2 size={32} className="text-vox-primary" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-black text-white uppercase italic tracking-tighter">Sever Connection?</h3>
+                    <p className="text-[10px] text-white/40 uppercase font-bold tracking-widest mt-2 px-4">
+                      Are you sure you want to decommission this neural node from the active mesh?
+                    </p>
+                  </div>
+                  <div className="flex gap-4 w-full">
+                    <button 
+                      onClick={() => setConfirmDelete(null)}
+                      className="flex-1 px-6 py-3 rounded-xl bg-white/5 border border-white/10 text-[10px] font-black text-white hover:bg-white/10 transition-all uppercase tracking-widest"
+                    >
+                      Abort
+                    </button>
+                    <button 
+                      onClick={handleConfirmDelete}
+                      className="flex-1 px-6 py-3 rounded-xl bg-red-500/20 border border-red-500/50 text-[10px] font-black text-red-400 hover:bg-red-500/30 transition-all uppercase tracking-widest"
+                    >
+                      Confirm
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
         {nodes.length === 0 && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <motion.div 
@@ -302,7 +526,50 @@ export const FlowCanvas = () => {
             </div>
             <span className="text-lg font-black text-white italic tracking-tighter font-display uppercase">{activeWs?.name || 'CENTRAL_NODE_01'}</span>
           </div>
-          <div className="h-10 w-px bg-vox-border mx-3 hidden xl:block" />
+          <div className="h-10 w-px bg-white/5 mx-3" />
+          
+          {/* Execution Mode Toggle */}
+          <div className="flex bg-white/5 border border-white/10 rounded-full overflow-hidden">
+             <button 
+              onClick={undo}
+              className="p-3 border-r border-white/5 hover:bg-white/5 text-white/30 hover:text-white transition-all active:scale-95"
+              title="Undo Sequence"
+             >
+                <Undo2 size={14} />
+             </button>
+             <button 
+              onClick={redo}
+              className="p-3 hover:bg-white/5 text-white/30 hover:text-white transition-all active:scale-95"
+              title="Redo Sequence"
+             >
+                <Redo2 size={14} />
+             </button>
+          </div>
+
+          <div className="h-10 w-px bg-white/5 mx-1" />
+
+          <button 
+            onClick={handleClusterSelected}
+            className="flex items-center gap-3 px-6 py-3 rounded-full bg-white/5 border border-white/10 text-[10px] font-black text-white/40 hover:text-vox-primary hover:border-vox-primary/30 transition-all uppercase tracking-widest"
+            title="Cluster Selected Nodes"
+          >
+            <Layers size={14} />
+            Cluster
+          </button>
+
+          <button 
+            onClick={toggleExecutionMode}
+            className={cn(
+              "flex items-center gap-3 px-6 py-3 rounded-full text-[10px] font-black transition-all uppercase tracking-widest border",
+              isExecutionMode 
+                ? "bg-vox-primary/10 border-vox-primary text-vox-primary shadow-[0_0_20px_rgba(0,229,255,0.2)]" 
+                : "bg-white/5 border-white/10 text-white/40 hover:text-white/60"
+            )}
+          >
+            <Radio size={14} className={isExecutionMode ? "animate-pulse" : ""} />
+            {isExecutionMode ? 'Execution Mode: ON' : 'Draft Mode'}
+          </button>
+
           <button 
             onClick={handleSave}
             className="flex items-center gap-3 px-6 py-3 rounded-full bg-white/5 border border-vox-border text-[10px] font-black text-white/60 hover:text-white hover:bg-white/10 transition-all uppercase tracking-widest"
@@ -393,7 +660,7 @@ export const FlowCanvas = () => {
         </Panel>
 
       </ReactFlow>
-      <TerminalDrawer isExecuting={isExecuting} />
+      <TerminalDrawer isExecuting={isExecuting} isExecutionMode={isExecutionMode} />
     </div>
   );
 };

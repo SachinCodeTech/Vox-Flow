@@ -21,7 +21,42 @@ import {
 import { cn } from '../lib/utils';
 import { useWorkflowStore } from '../store/useWorkflowStore';
 
-const MetricCard = ({ title, value, unit, icon: Icon, color, trend }: any) => (
+import { 
+  LineChart, 
+  Line, 
+  ResponsiveContainer, 
+  Tooltip as ChartTooltip, 
+  YAxis, 
+  XAxis,
+  AreaChart,
+  Area
+} from 'recharts';
+
+const TrendGraph = ({ data, dataKey, color }: { data: any[], dataKey: string, color: string }) => (
+  <div className="h-10 w-32">
+    <ResponsiveContainer width="100%" height="100%">
+      <AreaChart data={data}>
+        <defs>
+          <linearGradient id={`gradient-${dataKey}`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="5%" stopColor={color} stopOpacity={0.3}/>
+            <stop offset="95%" stopColor={color} stopOpacity={0}/>
+          </linearGradient>
+        </defs>
+        <Area 
+          type="monotone" 
+          dataKey={dataKey} 
+          stroke={color} 
+          strokeWidth={2}
+          fillOpacity={1} 
+          fill={`url(#gradient-${dataKey})`} 
+          isAnimationActive={false}
+        />
+      </AreaChart>
+    </ResponsiveContainer>
+  </div>
+);
+
+const MetricCard = ({ title, value, unit, icon: Icon, color, trend, historyData, dataKey }: any) => (
   <motion.div 
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
@@ -32,14 +67,17 @@ const MetricCard = ({ title, value, unit, icon: Icon, color, trend }: any) => (
       <div className={cn("p-4 rounded-2xl bg-white/5 border border-vox-border text-white/40 group-hover:text-vox-primary transition-all")}>
         <Icon size={24} />
       </div>
-      {trend && (
-        <span className="flex items-center gap-1.5 text-[10px] font-black text-vox-success bg-vox-success/10 px-3 py-1 rounded-full border border-vox-success/20">
-          <TrendingUp size={12} /> {trend}%
-        </span>
-      )}
+      <div className="flex flex-col items-end gap-2">
+        {trend && (
+          <span className="flex items-center gap-1.5 text-[10px] font-black text-vox-success bg-vox-success/10 px-3 py-1 rounded-full border border-vox-success/20">
+            <TrendingUp size={12} /> {trend}%
+          </span>
+        )}
+        {historyData && dataKey && <TrendGraph data={historyData} dataKey={dataKey} color={color === 'bg-vox-primary' ? '#00E5FF' : color === 'bg-vox-secondary' ? '#FF2D55' : '#10B981'} />}
+      </div>
     </div>
     <div className="space-y-2">
-      <h3 className="text-[10px] font-black text-white/30 uppercase tracking-[0.4em]">{title}</h3>
+      <h3 className="text-[10px] font-black text-white/70 uppercase tracking-[0.4em]">{title}</h3>
       <div className="flex items-baseline gap-2">
         <span className="text-4xl lg:text-5xl font-black text-white tracking-tighter italic font-display">{value}</span>
         <span className="text-[10px] font-black text-vox-primary uppercase tracking-[0.2em]">{unit}</span>
@@ -49,7 +87,7 @@ const MetricCard = ({ title, value, unit, icon: Icon, color, trend }: any) => (
     <motion.div 
       animate={{ y: [0, 160, 0] }}
       transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
-      className="absolute inset-x-0 h-px bg-vox-primary/5 pointer-events-none"
+      className="absolute inset-x-0 h-px bg-vox-primary/10 pointer-events-none"
     />
   </motion.div>
 );
@@ -70,7 +108,7 @@ const ConfidenceRing = ({ value, label }: { value: number, label: string }) => (
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
            <span className="text-3xl font-black text-white font-display tracking-tighter">{value}%</span>
-           <span className="text-[8px] font-black text-white/30 uppercase tracking-widest">Confidence</span>
+           <span className="text-[8px] font-black text-white/50 uppercase tracking-widest">Confidence</span>
         </div>
         {/* Animated Particles orbiting ring */}
         <motion.div 
@@ -125,10 +163,10 @@ const AIInsightsPanel = () => {
                     <h4 className="text-[11px] font-black text-white uppercase tracking-widest">{insight.title}</h4>
                     <span className={cn(
                       "text-[8px] font-black px-2 py-0.5 rounded border uppercase",
-                      insight.impact === 'high' ? "text-red-400 border-red-400/20 bg-red-400/10" : "text-white/40 border-white/10 bg-white/5"
+                      insight.impact === 'high' ? "text-red-400 border-red-400/20 bg-red-400/10" : "text-white/60 border-white/20 bg-white/10"
                     )}>{insight.impact} IMPACT</span>
                   </div>
-                  <p className="text-[10px] text-white/40 leading-relaxed font-medium uppercase tracking-tight">{insight.description}</p>
+                  <p className="text-[10px] text-white/80 leading-relaxed font-medium uppercase tracking-tight">{insight.description}</p>
                 </div>
               </div>
             </motion.div>
@@ -170,7 +208,7 @@ const AgentEcosystem = () => {
                 </div>
                 <div className="flex-1">
                   <h4 className="text-[11px] font-black text-white uppercase tracking-widest">{agent.name}</h4>
-                  <p className="text-[8px] font-bold text-white/20 uppercase tracking-widest">{agent.role}</p>
+                  <p className="text-[8px] font-bold text-white/40 uppercase tracking-widest">{agent.role}</p>
                 </div>
                 <div className={cn(
                   "w-2 h-2 rounded-full",
@@ -178,9 +216,13 @@ const AgentEcosystem = () => {
                   agent.status === 'executing' ? "bg-vox-primary shadow-[0_0_10px_rgba(0,242,255,0.5)]" : "bg-vox-secondary"
                 )} />
              </div>
-             <div className="p-3 rounded-xl bg-black/20 border border-white/5">
-                <p className="text-[9px] font-black text-white/40 uppercase tracking-widest mb-1 italic">Last Action:</p>
-                <p className="text-[10px] text-vox-primary font-bold uppercase truncate tracking-tight">{agent.lastAction}</p>
+             <div className="p-3 rounded-xl bg-black/40 border border-white/10 h-12 flex flex-col justify-center">
+                <p className="text-[9px] font-black text-white/60 uppercase tracking-widest mb-0.5 italic">Last Action:</p>
+                <TypingText 
+                  text={agent.lastAction} 
+                  className="text-[10px] text-vox-primary font-bold uppercase truncate tracking-tight"
+                  speed={30}
+                />
              </div>
           </motion.div>
         ))}
@@ -235,8 +277,10 @@ const ActivityLog = () => {
   );
 };
 
+import { TypingText } from './TypingText';
+
 export const Dashboard = () => {
-  const { setViewMode, workspaces, currentWorkspaceId } = useWorkflowStore();
+  const { setViewMode, workspaces, currentWorkspaceId, healthHistory } = useWorkflowStore();
   const currentWs = workspaces.find(w => w.id === currentWorkspaceId);
 
   return (
@@ -246,7 +290,7 @@ export const Dashboard = () => {
         <div className="space-y-4">
           <div className="flex items-center gap-3 text-vox-primary">
             <LayoutDashboard size={16} className="sm:w-5 sm:h-5" />
-            <span className="text-[10px] font-black uppercase tracking-[0.6em] leading-none mb-1">Autonomous Intelligence HUD</span>
+            <TypingText text="Autonomous Intelligence HUD" className="text-[10px] font-black uppercase tracking-[0.6em] leading-none mb-1" />
             <div className="h-4 w-px bg-vox-border hidden sm:block" />
             <span className="text-[10px] font-black text-white/30 uppercase tracking-[0.4em] hidden sm:block">Enterprise Node v4.0</span>
           </div>
@@ -267,10 +311,10 @@ export const Dashboard = () => {
 
       {/* Primary KPI Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <MetricCard title="System Confidence" value="98.2" unit="%" icon={Cpu} color="bg-vox-primary" trend={2.4} />
-        <MetricCard title="Vault Integrity" value="0.99" unit="SAFE" icon={ShieldCheck} color="bg-vox-secondary" />
+        <MetricCard title="System Confidence" value="98.2" unit="%" icon={Cpu} color="bg-vox-primary" trend={2.4} historyData={healthHistory} dataKey="cognition" />
+        <MetricCard title="Vault Integrity" value="0.99" unit="SAFE" icon={ShieldCheck} color="bg-vox-secondary" historyData={healthHistory} dataKey="stability" />
         <MetricCard title="Neural Mesh" value={workspaces.length} unit="NODES" icon={Briefcase} color="bg-vox-primary" />
-        <MetricCard title="Throughput" value="1.4M" unit="SYN" icon={Zap} color="bg-vox-success" />
+        <MetricCard title="Throughput" value="1.4M" unit="SYN" icon={Zap} color="bg-vox-success" historyData={healthHistory} dataKey="velocity" />
       </div>
 
       {/* Cognitive Layer Section */}
@@ -300,8 +344,8 @@ export const Dashboard = () => {
                              <Activity size={14} />
                           </div>
                           <div>
-                            <h4 className="text-[10px] font-black text-white tracking-widest uppercase">{ws.name}</h4>
-                            <p className="text-[8px] font-black text-white/20 uppercase">{ws.nodes.length} Active Pipelines</p>
+                            <h4 className="text-[10px] font-black text-white/80 tracking-widest uppercase">{ws.name}</h4>
+                            <p className="text-[8px] font-black text-white/40 uppercase">{ws.nodes.length} Active Pipelines</p>
                           </div>
                        </div>
                        <div className="w-1.5 h-1.5 rounded-full bg-vox-primary shadow-[0_0_10px_rgba(0,242,255,0.4)]" />
@@ -328,6 +372,63 @@ export const Dashboard = () => {
           </div>
         </div>
       </div>
+
+      {/* Infrastructure Mesh Layer (Level 6) */}
+      <section className="space-y-6 pt-12 border-t border-white/5">
+        <div className="flex items-center justify-between px-1">
+           <div className="flex items-center gap-3">
+              <Database size={16} className="text-vox-primary" />
+              <h3 className="text-xs font-black text-white uppercase tracking-[0.4em] italic">Infrastructure Mesh :: Layer 6</h3>
+           </div>
+           <span className="text-[8px] font-mono text-white/20 uppercase tracking-[0.3em]">Runtime_Clusters_Active</span>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {[
+            { id: 'CORE-S1', name: 'Primary Mainframe', load: '42%', storage: '12PB', temp: '32°C' },
+            { id: 'CAD-ARX', name: 'Deep Storage Vault', load: '18%', storage: '850TB', temp: '18°C' },
+            { id: 'AI-NODE', name: 'Cognitive Cluster', load: '94%', storage: '2PB', temp: '44°C' },
+            { id: 'SEC-GWY', name: 'Neural Firewall', load: '08%', storage: '120TB', temp: '22°C' }
+          ].map(server => (
+            <div key={server.id} className="p-6 rounded-[2.5rem] bg-white/[0.02] border border-white/5 flex flex-col gap-5 group hover:border-vox-primary/30 transition-all relative overflow-hidden">
+               <div className="flex justify-between items-start z-10">
+                  <div className="flex flex-col gap-1">
+                     <span className="text-[8px] font-mono text-vox-primary/60">{server.id}</span>
+                     <h4 className="text-xs font-black text-white uppercase tracking-wider">{server.name}</h4>
+                  </div>
+                  <div className="flex flex-col items-end gap-1">
+                     <div className="w-1.5 h-1.5 rounded-full bg-vox-primary shadow-[0_0_8px_rgba(0,229,255,0.5)]" />
+                     <span className="text-[8px] font-black text-white/20">{server.temp}</span>
+                  </div>
+               </div>
+               
+               <div className="space-y-2 z-10">
+                  <div className="flex justify-between text-[7px] font-black uppercase tracking-widest text-white/40">
+                     <span>Computational Load</span>
+                     <span>{server.load}</span>
+                  </div>
+                  <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
+                     <motion.div 
+                       initial={{ width: 0 }}
+                       animate={{ width: server.load }}
+                       className="h-full bg-vox-primary"
+                     />
+                  </div>
+               </div>
+
+               <div className="flex justify-between items-center z-10">
+                  <div className="flex flex-col">
+                     <span className="text-[6px] font-black text-white/20 uppercase tracking-widest">Active Data</span>
+                     <span className="text-[10px] font-black text-white/60 tracking-tighter">{server.storage}</span>
+                  </div>
+                  <ArrowUpRight size={14} className="text-white/10 group-hover:text-vox-primary transition-colors" />
+               </div>
+
+               {/* Ambient Background Grid inside Card */}
+               <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:10px_10px] opacity-20 pointer-events-none" />
+            </div>
+          ))}
+        </div>
+      </section>
     </div>
   );
 };

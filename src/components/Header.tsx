@@ -78,6 +78,7 @@ export const Header = ({
       <div className="flex items-center gap-4">
         <div className="hidden sm:flex items-center gap-1 mr-4">
            <HeaderIconButton icon={Info} onClick={() => onSetViewMode('info')} tooltip="System Info" />
+           <HeaderIconButton icon={HelpCircle} onClick={() => onSetViewMode('guide')} tooltip="User Guide" />
            <HeaderIconButton icon={Shield} onClick={() => onSetViewMode('privacy')} tooltip="Privacy Protocols" />
         </div>
 
@@ -91,11 +92,17 @@ export const Header = ({
             <Zap size={14} className="fill-current" /> FOCUS
           </motion.button>
 
-          <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-vox-primary/40 to-vox-secondary/40 p-px group cursor-pointer hover:scale-105 transition-transform shadow-xl shadow-vox-primary/10">
+          <div 
+            onClick={() => onSetViewMode('about')}
+            className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-vox-primary/40 to-vox-secondary/40 p-px group cursor-pointer hover:scale-105 transition-transform shadow-xl shadow-vox-primary/10 relative"
+          >
              <div className="w-full h-full rounded-2xl bg-vox-bg flex items-center justify-center overflow-hidden relative">
                 <span className="text-[10px] font-black text-white relative z-10 tracking-tighter">DZ</span>
                 <div className="absolute inset-0 bg-vox-primary/5 group-hover:bg-vox-primary/20 transition-colors" />
              </div>
+             <span className="absolute top-full mt-2 right-0 px-2 py-1 bg-vox-bg border border-white/10 rounded text-[8px] font-black uppercase tracking-widest text-white whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-all scale-90 group-hover:scale-100 shadow-2xl z-50">
+               Developer Zone
+             </span>
           </div>
         </div>
       </div>

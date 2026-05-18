@@ -171,7 +171,7 @@ export const GovernanceHub = () => {
                   <AnimatePresence mode="wait">
                     {simulations.length > 0 ? (
                       <motion.div 
-                        key={simulations[0].id}
+                        key={simulations?.[0]?.id}
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 1.05 }}
@@ -180,20 +180,20 @@ export const GovernanceHub = () => {
                          <div className="flex items-center justify-between">
                             <div>
                                <span className="text-[8px] font-black text-vox-primary uppercase tracking-[0.4em]">Success</span>
-                               <h4 className="text-sm font-black text-white tracking-tighter uppercase">{simulations[0].target}</h4>
+                               <h4 className="text-sm font-black text-white tracking-tighter uppercase">{simulations?.[0]?.target}</h4>
                             </div>
                             <div className={cn(
                                "w-10 h-10 rounded-xl flex items-center justify-center font-black text-[10px]",
-                               simulations[0].outcome === 'negative' ? "bg-red-400 text-black" : "bg-emerald-400 text-black"
+                               simulations?.[0]?.outcome === 'negative' ? "bg-red-400 text-black" : "bg-emerald-400 text-black"
                             )}>
-                               {(simulations[0].confidence * 100).toFixed(0)}%
+                               {(simulations?.[0]?.confidence * 100).toFixed(0)}%
                             </div>
                          </div>
                          <div className="space-y-1.5">
-                            {simulations[0].results.map((res, i) => (
+                            {simulations?.[0]?.results.map((res, i) => (
                               <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-white/5 border border-white/5">
                                  <span className="text-[8px] font-black text-white/60 uppercase tracking-widest">{res}</span>
-                                 <CheckCircle2 size={10} className={simulations[0].outcome === 'negative' ? "text-red-400" : "text-emerald-400"} />
+                                 <CheckCircle2 size={10} className={simulations?.[0]?.outcome === 'negative' ? "text-red-400" : "text-emerald-400"} />
                               </div>
                             ))}
                          </div>

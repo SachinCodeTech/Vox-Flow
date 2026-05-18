@@ -52,6 +52,18 @@ const nodeIdList = [
     { label: 'Layer Map', icon: 'Layers', type: 'Action' },
     { label: 'Plot Check', icon: 'FileText', type: 'Action' },
     { label: 'Revise Sync', icon: 'Refresh', type: 'Action' },
+    { label: 'Sub-Workflow', icon: 'Workflow', type: 'Action' },
+    { label: 'Human Approval', icon: 'ShieldCheck', type: 'Action' },
+    { label: 'Logic Gate', icon: 'Scale', type: 'Action' },
+    { label: 'Figma Hook', icon: 'Layout', type: 'Trigger' },
+    { label: 'VoxCadd Sync', icon: 'Box', type: 'Trigger' },
+    { label: 'Rhino Link', icon: 'Zap', type: 'Action' },
+    { label: 'SolidWorks Ops', icon: 'Settings', type: 'Action' },
+  ]},
+  { group: 'Specialized AI', items: [
+     { label: 'AI Trigger', icon: 'Sparkles', type: 'Trigger', description: 'Natural language defined trigger' },
+     { label: 'Figma Parser', icon: 'LayoutTemplate', type: 'Action' },
+     { label: 'CAD Archival', icon: 'Archive', type: 'Action' },
   ]},
   { group: 'Data & Logic', items: [
     { label: 'Filter Data', icon: 'Filter', type: 'Action' },
@@ -75,6 +87,18 @@ const nodeIdList = [
 ];
 
 const templates = [
+  { 
+    name: 'AI Studio & GitHub Sync', 
+    nodes: [
+      { id: 't1', type: 'trigger', data: { label: 'Google AI Studio', icon: 'AI' }, position: { x: 50, y: 150 } },
+      { id: 'a1', type: 'action', data: { label: 'Backup GitHub', icon: 'Zip' }, position: { x: 300, y: 150 } },
+      { id: 'a2', type: 'action', data: { label: 'Connectivity Check', icon: 'Globe' }, position: { x: 550, y: 150 } }
+    ],
+    edges: [
+      { id: 'e1', source: 't1', target: 'a1', animated: true, type: 'neural' },
+      { id: 'e2', source: 'a1', target: 'a2', animated: true, type: 'neural' }
+    ]
+  },
   { 
     name: 'CAD Approval Pipeline', 
     nodes: [
@@ -151,7 +175,8 @@ const iconSidebarMap = {
   Search: SearchCode,
   Users: Users,
   ShieldCheck: ShieldCheck,
-  Braces: Braces
+  Braces: Braces,
+  Workflow: Zap // Or find a better one from Lucide-react if needed, for now Zap is placeholder or I'll use Layers
 };
 
 export const Sidebar = ({ isCollapsed, onToggle }: { isCollapsed: boolean, onToggle: () => void }) => {
@@ -246,8 +271,8 @@ export const Sidebar = ({ isCollapsed, onToggle }: { isCollapsed: boolean, onTog
              { id: 'canvas', icon: Layers, label: 'Build' },
              { id: 'dashboard', icon: Activity, label: 'Ops' },
              { id: 'neural', icon: SearchCode, label: 'Map' },
+             { id: 'mission', icon: Zap, label: 'Live' },
              { id: 'governance', icon: ShieldCheck, label: 'Gov' },
-             { id: 'cosmos', icon: Globe, label: 'Cosm' },
              { id: 'advisor', icon: Users, label: 'Intel' }
            ].map((nav) => (
              <button

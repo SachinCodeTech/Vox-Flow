@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useWorkflowStore, StrategicAdvice, MemoryPattern } from '../store/useWorkflowStore';
 import { 
@@ -13,12 +13,19 @@ import {
   ArrowRight,
   Sparkles,
   BarChart3,
-  Scale
+  Scale,
+  Search
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 export const ExecutiveAdvisor = () => {
-  const { strategicAdvice, institutionalMemory, health } = useWorkflowStore();
+  const { strategicAdvice, institutionalMemory, health, analyzeWorkflow, objectives } = useWorkflowStore();
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filteredMemories = institutionalMemory.filter(m => 
+    m.pattern.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    m.context.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <div className="flex-1 overflow-y-auto custom-scrollbar bg-[#050505] p-6 lg:p-10 space-y-12 pb-48 sm:pb-28">
@@ -32,6 +39,12 @@ export const ExecutiveAdvisor = () => {
           <h1 className="text-3xl sm:text-4xl lg:text-6xl font-black text-white tracking-tighter italic uppercase leading-[0.85]">
             Institutional <br /><span className="text-vox-primary">Cognition</span>
           </h1>
+          <button 
+            onClick={analyzeWorkflow}
+            className="mt-4 px-6 py-3 rounded-2xl bg-vox-primary/10 border border-vox-primary/30 text-[10px] font-black text-vox-primary uppercase tracking-[0.3em] hover:bg-vox-primary hover:text-vox-bg transition-all flex items-center gap-3 shadow-lg shadow-vox-primary/5 group"
+          >
+            <Sparkles size={16} className="group-hover:rotate-12 transition-transform" /> Engage AI Architect
+          </button>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 w-full xl:w-auto">
@@ -117,10 +130,25 @@ export const ExecutiveAdvisor = () => {
                   <History size={14} className="text-vox-secondary" />
                   Sentient Memory Patterns
                 </h2>
+                <div className="relative group">
+                  <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-vox-secondary transition-colors" />
+                  <input 
+                    type="text" 
+                    placeholder="QUERY_MEMORIES..." 
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="bg-white/5 border border-white/10 rounded-full py-2 pl-10 pr-4 text-[9px] font-black uppercase tracking-widest text-white/60 focus:outline-none focus:border-vox-secondary/40 transition-all w-48"
+                  />
+                </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                 {institutionalMemory.map((mem, i) => (
+                 {institutionalMemory.length === 0 ? (
+                    <div className="col-span-full py-12 flex flex-col items-center gap-4 text-center opacity-50 grayscale">
+                       <History size={24} />
+                       <p className="text-[10px] font-black text-white/40 uppercase tracking-[0.4em]">Zero historical patterns recorded</p>
+                    </div>
+                 ) : filteredMemories.map((mem, i) => (
                    <motion.div 
                      key={mem.id}
                      whileHover={{ y: -4 }}
@@ -151,9 +179,9 @@ export const ExecutiveAdvisor = () => {
                  Institutional Objectives
               </h3>
               <div className="space-y-8">
-                 <Objective label="Sovereign Efficiency" progress={94} />
-                 <Objective label="Policy Integration" progress={82} />
-                 <Objective label="Autonomous Scaling" progress={68} />
+                {objectives.map(obj => (
+                  <Objective key={obj.id} label={obj.label} progress={obj.progress} />
+                ))}
               </div>
            </section>
 

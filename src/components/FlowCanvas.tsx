@@ -31,7 +31,11 @@ import {
   Radio, 
   Undo2, 
   Redo2, 
-  Layers
+  Layers,
+  Pause,
+  SkipForward,
+  RotateCcw,
+  History
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 
@@ -160,6 +164,13 @@ export const FlowCanvas = () => {
     setNodes,
     isExecuting,
     setIsExecuting,
+    executionState,
+    executionStep,
+    executionHistory,
+    pauseExecution,
+    resumeExecution,
+    stepExecution,
+    rewindExecution,
     isExecutionMode,
     toggleExecutionMode,
     undo,
@@ -169,7 +180,8 @@ export const FlowCanvas = () => {
     loadWorkflow,
     workspaces,
     currentWorkspaceId,
-    addRuntimeJob
+    addRuntimeJob,
+    executeSequence
   } = useWorkflowStore();
 
   const activeWs = workspaces.find(w => w.id === currentWorkspaceId);
@@ -263,7 +275,7 @@ export const FlowCanvas = () => {
   );
 
   const handleExecute = () => {
-    setIsExecuting(true);
+    executeSequence();
     setLastExecution(null);
     
     // Log job to enterprise runtime tracker
@@ -272,17 +284,6 @@ export const FlowCanvas = () => {
       nodeId: nodes.length > 0 ? nodes[0].data.label : 'Manual Start',
       status: 'running'
     });
-
-    setTimeout(() => {
-      setIsExecuting(false);
-      setLastExecution(new Date().toLocaleTimeString());
-      
-      addRuntimeJob({
-        workspaceId: currentWorkspaceId,
-        nodeId: nodes.length > 0 ? nodes[0].data.label : 'Manual Start',
-        status: 'success'
-      });
-    }, 2500);
   };
 
   const animatedEdges = React.useMemo(() => {
@@ -371,6 +372,67 @@ export const FlowCanvas = () => {
 
   return (
     <div className="w-full h-full relative" ref={reactFlowWrapper}>
+      {/* Execution Control Overlay */}
+      <AnimatePresence>
+        {isExecuting && (
+          <motion.div 
+            initial={{ y: 100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 100, opacity: 0 }}
+            className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[100] flex items-center gap-2 p-2 bg-vox-bg/80 backdrop-blur-2xl border border-vox-primary/30 rounded-[2rem] shadow-[0_0_40px_rgba(0,242,255,0.2)]"
+          >
+             <div className="flex items-center gap-1 px-4 border-r border-white/10 mr-2">
+                <div className="w-2 h-2 rounded-full bg-vox-primary animate-ping" />
+                <span className="text-[10px] font-black text-vox-primary uppercase tracking-widest whitespace-nowrap">Pulse Executing</span>
+                <span className="ml-3 px-2 py-0.5 rounded bg-white/5 text-[9px] font-mono text-white/40">Step: {executionStep}</span>
+             </div>
+
+             <div className="flex items-center gap-1">
+                <button 
+                  onClick={rewindExecution}
+                  disabled={executionHistory.length === 0}
+                  className="p-3 rounded-xl hover:bg-white/5 text-white/60 disabled:opacity-20 transition-all"
+                  title="Rewind Step"
+                >
+                   <History size={18} />
+                </button>
+                {executionState === 'paused' ? (
+                  <button 
+                    onClick={resumeExecution}
+                    className="p-3 rounded-xl bg-vox-primary text-vox-bg shadow-lg shadow-vox-primary/20 hover:scale-[1.1] active:scale-95 transition-all"
+                    title="Resume"
+                  >
+                     <Play size={18} fill="currentColor" />
+                  </button>
+                ) : (
+                  <button 
+                    onClick={pauseExecution}
+                    className="p-3 rounded-xl bg-white/10 text-white hover:bg-white/20 transition-all"
+                    title="Pause"
+                  >
+                     <Pause size={18} fill="currentColor" />
+                  </button>
+                )}
+                <button 
+                  onClick={stepExecution}
+                  className="p-3 rounded-xl hover:bg-white/5 text-white/60 transition-all"
+                  title="Step Forward"
+                >
+                   <SkipForward size={18} fill="currentColor" />
+                </button>
+                <div className="w-px h-6 bg-white/10 mx-2" />
+                <button 
+                  onClick={() => setIsExecuting(false)}
+                  className="p-3 rounded-xl hover:bg-red-500/10 text-red-400 transition-all"
+                  title="Terminate Sequence"
+                >
+                   <RotateCcw size={18} />
+                </button>
+             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <ReactFlow
         nodes={nodes}
         edges={animatedEdges}
@@ -387,6 +449,23 @@ export const FlowCanvas = () => {
         connectionMode={ConnectionMode.Loose}
         deleteKeyCode={['Backspace', 'Delete']}
         onNodesDelete={onNodesDelete}
+        onNodeContextMenu={(event, node) => {
+          event.preventDefault();
+          useWorkflowStore.getState().setContextMenu({
+            id: node.id,
+            x: event.clientX,
+            y: event.clientY,
+            type: 'node'
+          });
+        }}
+        onPaneContextMenu={(event) => {
+          event.preventDefault();
+          useWorkflowStore.getState().setContextMenu({
+            x: event.clientX,
+            y: event.clientY,
+            type: 'canvas'
+          });
+        }}
         snapToGrid={true}
         snapGrid={[16, 16]}
         fitView
@@ -575,6 +654,20 @@ export const FlowCanvas = () => {
             className="flex items-center gap-3 px-6 py-3 rounded-full bg-white/5 border border-vox-border text-[10px] font-black text-white/60 hover:text-white hover:bg-white/10 transition-all uppercase tracking-widest"
           >
             <Save size={14} /> Snapshot
+          </button>
+          <button 
+            onClick={() => {
+              if (confirm('Initiate production-grade build of this neural sequence?')) {
+                setIsExecuting(true);
+                setTimeout(() => {
+                   setIsExecuting(false);
+                   alert('Build successful. Artifact deployed to AOC Production Layer.');
+                }, 3000);
+              }
+            }}
+            className="flex items-center gap-3 px-6 py-3 rounded-full bg-vox-secondary/10 border border-vox-secondary/30 text-[10px] font-black text-vox-secondary hover:bg-vox-secondary hover:text-white transition-all uppercase tracking-widest group"
+          >
+            <Cpu size={14} className="group-hover:rotate-90 transition-transform" /> Build_Mesh
           </button>
           <button 
             onClick={handleExecute}

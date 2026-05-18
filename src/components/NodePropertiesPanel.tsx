@@ -200,7 +200,83 @@ export const NodePropertiesPanel = () => {
                </div>
                
                <div className="space-y-3">
-                  {selectedNode.type === 'action' ? (
+                  {selectedNode.data.label === 'AI Trigger' ? (
+                     <div className="space-y-4">
+                        <div className="space-y-2">
+                           <label className="text-[7px] font-black text-white/20 uppercase tracking-widest">Natural Language Condition</label>
+                           <textarea 
+                             className="w-full bg-black/40 border border-white/5 rounded-lg py-2.5 px-3 text-[10px] font-medium text-vox-primary focus:outline-none focus:border-vox-primary/30 transition-all placeholder:text-vox-primary/10 min-h-[80px]"
+                             placeholder="e.g. When a team member uploads a new CAD file with 'urgent' in the name..."
+                             value={params.condition || ''}
+                             onChange={(e) => handleParamChange('condition', e.target.value)}
+                           />
+                        </div>
+                        <div className="p-3 rounded-xl bg-vox-primary/5 border border-vox-primary/10 border-dashed">
+                           <p className="text-[8px] text- vox-primary/60 italic leading-relaxed">
+                              Gemini will parse this condition and activate the pulse when the organizational event stream matches your description.
+                           </p>
+                        </div>
+                     </div>
+                  ) : selectedNode.data.label === 'Sub-Workflow' ? (
+                     <div className="space-y-4">
+                        <div className="space-y-2">
+                           <label className="text-[7px] font-black text-white/20 uppercase tracking-widest">Select Logic Template</label>
+                           <select 
+                             className="w-full bg-black/40 border border-white/5 rounded-lg py-2.5 px-3 text-[10px] font-black text-vox-primary focus:outline-none focus:border-vox-primary/30 transition-all uppercase appearance-none"
+                             value={params.templateId || ''}
+                             onChange={(e) => handleParamChange('templateId', e.target.value)}
+                           >
+                             <option value="">-- NO TEMPLATE --</option>
+                             {useWorkflowStore.getState().customTemplates.map(t => (
+                               <option key={t.id} value={t.id}>{t.name}</option>
+                             ))}
+                             <option value="default-cad">CAD_APPROVAL_MESH</option>
+                             <option value="default-ops">OPS_MONITOR_CORE</option>
+                           </select>
+                        </div>
+                        <p className="text-[8px] text-white/30 italic">
+                           This node will execute the selected sub-workflow blueprint as a nested neural process.
+                        </p>
+                     </div>
+                  ) : selectedNode.data.label === 'Figma Hook' ? (
+                    <div className="space-y-4">
+                       <div className="space-y-2">
+                          <label className="text-[7px] font-black text-white/20 uppercase tracking-widest">Figma File ID / URL</label>
+                          <input 
+                            type="text"
+                            className="w-full bg-black/40 border border-white/5 rounded-lg py-2.5 px-3 text-[10px] text-vox-primary focus:outline-none focus:border-vox-primary/30 transition-all"
+                            placeholder="FIGMA_FILE_REF"
+                            value={params.fileRef || ''}
+                            onChange={(e) => handleParamChange('fileRef', e.target.value)}
+                          />
+                       </div>
+                       <div className="space-y-2">
+                          <label className="text-[7px] font-black text-white/20 uppercase tracking-widest">Event Type</label>
+                          <select 
+                             className="w-full bg-black/40 border border-white/5 rounded-lg py-2.5 px-3 text-[10px] font-black text-vox-primary focus:outline-none focus:border-vox-primary/30 transition-all uppercase"
+                             value={params.eventType || 'publish'}
+                             onChange={(e) => handleParamChange('eventType', e.target.value)}
+                           >
+                             <option value="publish">FILE_PUBLISHED</option>
+                             <option value="update">DESIGN_UPDATE</option>
+                             <option value="comment">NEW_COMMENT</option>
+                           </select>
+                       </div>
+                    </div>
+                  ) : selectedNode.data.label === 'VoxCadd Sync' ? (
+                    <div className="space-y-4">
+                       <div className="space-y-2">
+                          <label className="text-[7px] font-black text-white/20 uppercase tracking-widest">Project Space</label>
+                          <input 
+                            type="text"
+                            className="w-full bg-black/40 border border-white/5 rounded-lg py-2.5 px-3 text-[10px] text-vox-primary focus:outline-none focus:border-vox-primary/30 transition-all"
+                            placeholder="VOXCADD_PROJECT_ID"
+                            value={params.projectId || ''}
+                            onChange={(e) => handleParamChange('projectId', e.target.value)}
+                          />
+                       </div>
+                    </div>
+                  ) : selectedNode.type === 'action' ? (
                     <>
                       <div className="space-y-2">
                         <label className="text-[7px] font-black text-white/20 uppercase tracking-widest">Protocol Type</label>

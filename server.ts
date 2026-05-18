@@ -94,6 +94,50 @@ async function startServer() {
     }
   });
 
+  app.post("/api/analyze-workflow", async (req, res) => {
+    const { nodes, edges } = req.body;
+
+    try {
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: `Analyze the following workflow for logical inconsistencies, potential failures, and architectural optimizations.
+        Nodes: ${JSON.stringify(nodes.map((n: any) => ({ id: n.id, label: n.data.label, type: n.type })))}
+        Edges: ${JSON.stringify(edges.map((e: any) => ({ source: e.source, target: e.target })))}
+        
+        Provide 3 specific insights as an enterprise AI Architect. Focus on:
+        1. Failure Prediction (e.g., "Circular dependency detected" or "Missing trigger")
+        2. Optimization (e.g., "Parallelize these agents")
+        3. Sentient Suggestion (e.g., "Add a Guardian node for security")`,
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              insights: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    title: { type: Type.STRING },
+                    description: { type: Type.STRING },
+                    impact: { type: Type.STRING, enum: ['low', 'medium', 'high'] }
+                  },
+                  required: ['title', 'description', 'impact']
+                }
+              }
+            }
+          }
+        }
+      });
+
+      const text = response.text || "{}";
+      res.json(JSON.parse(text));
+    } catch (error) {
+      console.error("Gemini Error:", error);
+      res.status(500).json({ error: "Failed to analyze workflow" });
+    }
+  });
+
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({

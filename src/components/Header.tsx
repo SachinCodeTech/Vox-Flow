@@ -1,7 +1,8 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { Terminal, ChevronDown, Zap, Globe, Shield, Info, HelpCircle } from 'lucide-react';
+import { Terminal, ChevronDown, Zap, Globe, Shield, Info, HelpCircle, RefreshCw } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { useWorkflowStore } from '../store/useWorkflowStore';
 
 interface HeaderProps {
   currentWorkspace: string;
@@ -9,7 +10,6 @@ interface HeaderProps {
   workspaces: any[];
   onSetViewMode: (mode: string) => void;
   viewMode: string;
-  onFocusMode: () => void;
 }
 
 export const Header = ({ 
@@ -18,91 +18,88 @@ export const Header = ({
   workspaces, 
   onSetViewMode, 
   viewMode,
-  onFocusMode 
 }: HeaderProps) => {
+  const { executeSequence, isExecuting, logout, currentUser } = useWorkflowStore();
+  const [time, setTime] = React.useState(new Date());
+
+  React.useEffect(() => {
+    const timer = setInterval(() => setTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const formattedTime = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const formattedDate = time.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
+
   return (
     <motion.header 
       initial={{ y: -100 }}
       animate={{ y: 0 }}
-      className="h-14 flex items-center justify-between px-6 border-b border-vox-border bg-vox-panel/60 backdrop-blur-3xl z-[60] shrink-0 sticky top-0"
+      className="h-10 flex items-center justify-between px-6 border-b border-vox-border bg-vox-panel/60 backdrop-blur-3xl z-[60] shrink-0 sticky top-0"
     >
-      {/* App Branding & Icon */}
-      <div className="flex items-center gap-8">
+      {/* OS Logo & Name */}
+      <div className="flex items-center gap-6">
         <div 
           onClick={() => onSetViewMode('canvas')}
-          className="flex items-center gap-3 group cursor-pointer"
+          className="flex items-center gap-2 group cursor-pointer"
         >
-          <div className="w-8 h-8 rounded-xl bg-vox-primary/20 flex items-center justify-center border border-vox-primary/30 group-hover:bg-vox-primary group-hover:shadow-[0_0_20px_rgba(0,242,255,0.4)] transition-all duration-500">
-            <Terminal className="text-vox-primary group-hover:text-vox-bg transition-colors" size={16} />
-          </div>
-          <div className="flex flex-col">
-            <span className="text-[10px] font-black text-vox-primary tracking-[0.4em] leading-none mb-1 group-hover:translate-x-1 transition-transform">VOXFLOW</span>
-            <div className="flex items-center gap-1">
-              <span className="text-[14px] font-black text-white italic tracking-tighter">Sentient OS</span>
-              <div className="w-1.5 h-1.5 rounded-full bg-vox-success animate-pulse ml-2" />
-            </div>
-          </div>
+          <Terminal className="text-vox-primary" size={14} />
+          <span className="text-[11px] font-black text-white tracking-widest leading-none">VoxOS</span>
         </div>
 
-        <div className="h-8 w-px bg-white/10 hidden lg:block" />
-
-        {/* Global Navigation */}
-        <nav className="hidden xl:flex items-center gap-1">
-          <NavGroup title="Operate">
-            <HeaderNavButton active={viewMode === 'canvas'} onClick={() => onSetViewMode('canvas')}>Infrastructure</HeaderNavButton>
-            <HeaderNavButton active={viewMode === 'cosmos'} onClick={() => onSetViewMode('cosmos')}>Cosmos</HeaderNavButton>
-          </NavGroup>
-          <div className="w-4" />
-          <NavGroup title="Intelligence">
-            <HeaderNavButton active={viewMode === 'advisor'} onClick={() => onSetViewMode('advisor')}>Advisory</HeaderNavButton>
-            <HeaderNavButton active={viewMode === 'about'} onClick={() => onSetViewMode('about')}>Foundry</HeaderNavButton>
-          </NavGroup>
-        </nav>
-      </div>
-
-      {/* Workspace Selector */}
-      <div className="hidden md:flex items-center gap-4 px-4 py-1.5 rounded-2xl bg-white/[0.03] border border-white/5 hover:border-white/10 transition-all group">
-         <select 
-          value={currentWorkspace} 
-          onChange={(e) => onSwitchWorkspace(e.target.value)}
-          className="bg-transparent text-[11px] font-black text-white/60 uppercase tracking-widest cursor-pointer appearance-none focus:outline-none group-hover:text-white transition-colors"
-        >
-          {workspaces.map(w => (
-            <option key={w.id} value={w.id} className="bg-vox-panel text-white">{w.name}</option>
-          ))}
-        </select>
-        <ChevronDown size={12} className="text-vox-primary opacity-40 group-hover:opacity-100 group-hover:translate-y-0.5 transition-all" />
-      </div>
-
-      {/* System Actions */}
-      <div className="flex items-center gap-4">
-        <div className="hidden sm:flex items-center gap-1 mr-4">
-           <HeaderIconButton icon={Info} onClick={() => onSetViewMode('info')} tooltip="System Info" />
-           <HeaderIconButton icon={HelpCircle} onClick={() => onSetViewMode('guide')} tooltip="User Guide" />
-           <HeaderIconButton icon={Shield} onClick={() => onSetViewMode('privacy')} tooltip="Privacy Protocols" />
+        <div className="flex items-center gap-4 border-l border-white/10 pl-6 h-4">
+           {['File', 'Edit', 'Kernel', 'Mesh', 'Window', 'Help'].map(item => (
+             <button key={item} className="text-[10px] font-medium text-white/40 hover:text-white transition-colors">{item}</button>
+           ))}
         </div>
+      </div>
 
-        <div className="flex items-center gap-3 pl-6 border-l border-white/10">
+      {/* Center Logic: Clock */}
+      <div className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center select-none">
+         <span className="text-[10px] font-black text-white/80 tabular-nums">{formattedTime}</span>
+         <span className="text-[7px] font-black text-white/20 uppercase tracking-[0.2em] -mt-0.5">{formattedDate}</span>
+      </div>
+
+      {/* System Actions & Tray */}
+      <div className="flex items-center gap-5">
+        <div className="flex items-center gap-3">
           <motion.button 
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            onClick={onFocusMode}
-            className="px-4 py-1.5 rounded-xl bg-vox-bg border border-vox-primary/30 text-[10px] font-black text-vox-primary uppercase tracking-widest hover:bg-vox-primary hover:text-vox-bg transition-all flex items-center gap-2 shadow-lg shadow-vox-primary/5"
+            onClick={executeSequence}
+            disabled={isExecuting}
+            className={cn(
+              "px-3 py-1 rounded-lg border text-[9px] font-black uppercase tracking-widest transition-all flex items-center gap-1.5",
+              isExecuting 
+                ? "bg-amber-400 text-black border-amber-500 animate-pulse" 
+                : "bg-vox-primary/10 border-vox-primary/30 text-vox-primary hover:bg-vox-primary hover:text-vox-bg"
+            )}
           >
-            <Zap size={14} className="fill-current" /> FOCUS
+            {isExecuting ? <RefreshCw size={12} className="animate-spin" /> : <Zap size={12} className="fill-current" />}
+            {isExecuting ? 'SEQ_ACTIVE' : 'PULSE'}
           </motion.button>
 
+          <div className="w-px h-4 bg-white/10" />
+
+          <div className="flex items-center gap-2 pr-3">
+             <Globe size={13} className="text-white/20" />
+             <Shield size={13} className="text-vox-success" />
+             <Zap size={13} className="text-vox-secondary" />
+          </div>
+
           <div 
-            onClick={() => onSetViewMode('about')}
-            className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-vox-primary/40 to-vox-secondary/40 p-px group cursor-pointer hover:scale-105 transition-transform shadow-xl shadow-vox-primary/10 relative"
+            onClick={() => {
+              if (confirm('Decommission operational vector and terminate session?')) {
+                logout();
+              }
+            }}
+            className="flex items-center gap-2 group cursor-pointer hover:bg-white/5 px-2 py-1 rounded-lg transition-all"
           >
-             <div className="w-full h-full rounded-2xl bg-vox-bg flex items-center justify-center overflow-hidden relative">
-                <span className="text-[10px] font-black text-white relative z-10 tracking-tighter">DZ</span>
-                <div className="absolute inset-0 bg-vox-primary/5 group-hover:bg-vox-primary/20 transition-colors" />
+             <div className="w-5 h-5 rounded-md bg-gradient-to-tr from-vox-primary/40 to-vox-secondary/40 flex items-center justify-center overflow-hidden">
+                <span className="text-[8px] font-black text-white uppercase">
+                   {currentUser?.name?.split(' ').map((n: string) => n[0]).join('') || '??'}
+                </span>
              </div>
-             <span className="absolute top-full mt-2 right-0 px-2 py-1 bg-vox-bg border border-white/10 rounded text-[8px] font-black uppercase tracking-widest text-white whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-all scale-90 group-hover:scale-100 shadow-2xl z-50">
-               Developer Zone
-             </span>
+             <span className="text-[10px] font-black text-white/40 group-hover:text-white transition-colors">{currentUser?.name || 'VOX_AGENT'}</span>
           </div>
         </div>
       </div>

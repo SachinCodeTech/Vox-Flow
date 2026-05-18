@@ -9,7 +9,8 @@ import {
   Info,
   ExternalLink,
   ChevronRight,
-  Layers
+  Layers,
+  RefreshCw
 } from 'lucide-react';
 import { useWorkflowStore } from '../store/useWorkflowStore';
 import { cn } from '../lib/utils';
@@ -28,17 +29,15 @@ export const NodeContextMenu = () => {
 
   if (!contextMenu) return null;
 
-  const node = nodes.find(n => n.id === contextMenu.id);
-  if (!node) return null;
-
   const handleAction = (action: () => void) => {
     action();
     setContextMenu(null);
   };
 
   const selectedNodes = nodes.filter(n => n.selected);
+  const node = contextMenu.id ? nodes.find(n => n.id === contextMenu.id) : null;
 
-  const menuItems = [
+  const nodeMenuItems = node ? [
     { 
       label: 'Execute Node', 
       icon: Play, 
@@ -91,7 +90,16 @@ export const NodeContextMenu = () => {
         }
       }
     },
+  ] : [];
+
+  const canvasMenuItems = [
+    { label: 'Add Static Note', icon: Edit, action: () => {} },
+    { label: 'Organize Mesh', icon: Layers, action: () => {} },
+    { label: 'Refresh Telemetry', icon: RefreshCw, action: () => {} },
+    { label: 'Mesh Statistics', icon: Info, action: () => {} },
   ];
+
+  const menuItems = contextMenu.type === 'node' ? nodeMenuItems : canvasMenuItems;
 
   return (
     <div 
@@ -108,9 +116,11 @@ export const NodeContextMenu = () => {
       >
         <div className="px-3 py-2 border-b border-white/5 flex items-center justify-between mb-1">
            <div className="flex flex-col">
-              <span className="text-[7px] font-black text-vox-primary uppercase tracking-widest italic">Node Options</span>
+              <span className="text-[7px] font-black text-vox-primary uppercase tracking-widest italic">
+                {contextMenu.type === 'node' ? 'Node Options' : 'Canvas Mesh'}
+              </span>
               <span className="text-[10px] font-black text-white/40 uppercase tracking-tighter truncate max-w-[120px]">
-                {node.data.label}
+                {node ? node.data.label : 'GLOBAL_MESH'}
               </span>
            </div>
            <div className="w-6 h-6 rounded-lg bg-white/5 flex items-center justify-center">
@@ -118,7 +128,7 @@ export const NodeContextMenu = () => {
            </div>
         </div>
 
-        {menuItems.filter(i => !i.hidden).map((item, idx) => (
+        {menuItems.filter((i: any) => !i.hidden).map((item: any, idx: number) => (
           <button
             key={idx}
             onClick={() => handleAction(item.action)}

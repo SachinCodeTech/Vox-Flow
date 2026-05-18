@@ -234,10 +234,7 @@ const AgentEcosystem = () => {
 const ActivityLog = () => {
   const { runtimeJobs, workspaces } = useWorkflowStore();
   
-  const displayJobs = runtimeJobs.length > 0 ? runtimeJobs.slice(0, 5) : [
-    { id: '1', workspaceId: 'arch-dept-001', status: 'success', timestamp: new Date().toISOString(), nodeId: 'Syncing CAD Repo' },
-    { id: '2', workspaceId: 'arch-dept-001', status: 'running', timestamp: new Date().toISOString(), nodeId: 'AI Analysis' },
-  ];
+  const displayJobs = runtimeJobs.slice(0, 5);
 
   return (
     <div className="space-y-4">
@@ -248,39 +245,47 @@ const ActivityLog = () => {
         </h2>
       </div>
       <div className="space-y-2">
-        {displayJobs.map((job: any, i) => {
-          const ws = workspaces.find(w => w.id === job.workspaceId);
-          return (
-            <motion.div 
-              key={job.id}
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: i * 0.05 }}
-              className="p-3 rounded-2xl bg-white/[0.01] border border-white/[0.05] flex items-center gap-4"
-            >
-              <div className={cn(
-                "w-1 h-1 rounded-full",
-                job.status === 'running' ? "bg-vox-secondary animate-pulse" : "bg-vox-primary"
-              )} />
-              <div className="flex-1">
-                <p className="text-[10px] text-white/50">
-                  <span className="text-white/20 uppercase text-[8px] font-bold mr-2">[{ws?.name || 'System'}]</span>
-                  <span className="text-white/80">{job.nodeId || 'Op'}</span>
-                </p>
-              </div>
-              <span className="text-[8px] font-bold text-white/10 uppercase">{new Date(job.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
-            </motion.div>
-          );
-        })}
+        {displayJobs.length === 0 ? (
+          <div className="p-8 rounded-2xl border border-white/5 bg-white/[0.01] flex flex-col items-center gap-2">
+            <Activity size={16} className="text-white/10" />
+            <p className="text-[8px] font-black text-white/20 uppercase tracking-[0.2em]">Awaiting execution signals...</p>
+          </div>
+        ) : (
+          displayJobs.map((job: any, i) => {
+            const ws = workspaces.find(w => w.id === job.workspaceId);
+            return (
+              <motion.div 
+                key={job.id}
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: i * 0.05 }}
+                className="p-3 rounded-2xl bg-white/[0.01] border border-white/[0.05] flex items-center gap-4"
+              >
+                <div className={cn(
+                  "w-1 h-1 rounded-full",
+                  job.status === 'running' ? "bg-vox-secondary animate-pulse" : "bg-vox-primary"
+                )} />
+                <div className="flex-1">
+                  <p className="text-[10px] text-white/50">
+                    <span className="text-white/20 uppercase text-[8px] font-bold mr-2">[{ws?.name || 'System'}]</span>
+                    <span className="text-white/80">{job.nodeId || 'Op'}</span>
+                  </p>
+                </div>
+                <span className="text-[8px] font-bold text-white/10 uppercase">{new Date(job.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+              </motion.div>
+            );
+          })
+        )}
       </div>
     </div>
   );
 };
 
 import { TypingText } from './TypingText';
+import { SentientTerminal } from './SentientTerminal';
 
 export const Dashboard = () => {
-  const { setViewMode, workspaces, currentWorkspaceId, healthHistory } = useWorkflowStore();
+  const { setViewMode, workspaces, currentWorkspaceId, healthHistory, health, systemVitals } = useWorkflowStore();
   const currentWs = workspaces.find(w => w.id === currentWorkspaceId);
 
   return (
@@ -311,17 +316,17 @@ export const Dashboard = () => {
 
       {/* Primary KPI Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <MetricCard title="System Confidence" value="98.2" unit="%" icon={Cpu} color="bg-vox-primary" trend={2.4} historyData={healthHistory} dataKey="cognition" />
-        <MetricCard title="Vault Integrity" value="0.99" unit="SAFE" icon={ShieldCheck} color="bg-vox-secondary" historyData={healthHistory} dataKey="stability" />
+        <MetricCard title="System Confidence" value={(health.cognition * 100).toFixed(1)} unit="%" icon={Cpu} color="bg-vox-primary" trend={2.4} historyData={healthHistory} dataKey="cognition" />
+        <MetricCard title="Vault Integrity" value={health.stability.toFixed(2)} unit="SAFE" icon={ShieldCheck} color="bg-vox-secondary" historyData={healthHistory} dataKey="stability" />
         <MetricCard title="Neural Mesh" value={workspaces.length} unit="NODES" icon={Briefcase} color="bg-vox-primary" />
-        <MetricCard title="Throughput" value="1.4M" unit="SYN" icon={Zap} color="bg-vox-success" historyData={healthHistory} dataKey="velocity" />
+        <MetricCard title="Throughput" value={(health.velocity * 100).toFixed(0)} unit="SYN" icon={Zap} color="bg-vox-success" historyData={healthHistory} dataKey="velocity" />
       </div>
 
       {/* Cognitive Layer Section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-         <ConfidenceRing value={94} label="Strategic Alignment" />
-         <ConfidenceRing value={87} label="Market Prediction" />
-         <ConfidenceRing value={99} label="Security Readiness" />
+         <ConfidenceRing value={Math.round(health.cognition * 100)} label="Strategic Alignment" />
+         <ConfidenceRing value={Math.round(health.velocity * 100)} label="Market Prediction" />
+         <ConfidenceRing value={Math.round(health.stability * 100)} label="Security Readiness" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
@@ -329,30 +334,7 @@ export const Dashboard = () => {
         <div className="lg:col-span-2 space-y-12">
           <AgentEcosystem />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-             <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-xs font-black text-white uppercase tracking-[0.3em] flex items-center gap-3">
-                    <Briefcase size={14} className="text-vox-primary" />
-                    Operational Units
-                  </h2>
-                </div>
-                <div className="space-y-3">
-                  {workspaces.map(ws => (
-                    <motion.div key={ws.id} className="p-4 rounded-3xl bg-white/[0.01] border border-white/[0.05] hover:border-vox-primary/30 transition-all flex items-center justify-between group">
-                       <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-xl bg-white/5 flex items-center justify-center text-white/20 group-hover:text-vox-primary group-hover:bg-vox-primary/10 transition-all">
-                             <Activity size={14} />
-                          </div>
-                          <div>
-                            <h4 className="text-[10px] font-black text-white/80 tracking-widest uppercase">{ws.name}</h4>
-                            <p className="text-[8px] font-black text-white/40 uppercase">{ws.nodes.length} Active Pipelines</p>
-                          </div>
-                       </div>
-                       <div className="w-1.5 h-1.5 rounded-full bg-vox-primary shadow-[0_0_10px_rgba(0,242,255,0.4)]" />
-                    </motion.div>
-                  ))}
-                </div>
-             </div>
+             <SentientTerminal />
              <ActivityLog />
           </div>
         </div>
@@ -383,12 +365,7 @@ export const Dashboard = () => {
            <span className="text-[8px] font-mono text-white/20 uppercase tracking-[0.3em]">Runtime_Clusters_Active</span>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {[
-            { id: 'CORE-S1', name: 'Primary Mainframe', load: '42%', storage: '12PB', temp: '32°C' },
-            { id: 'CAD-ARX', name: 'Deep Storage Vault', load: '18%', storage: '850TB', temp: '18°C' },
-            { id: 'AI-NODE', name: 'Cognitive Cluster', load: '94%', storage: '2PB', temp: '44°C' },
-            { id: 'SEC-GWY', name: 'Neural Firewall', load: '08%', storage: '120TB', temp: '22°C' }
-          ].map(server => (
+          {systemVitals.infrastructure.map(server => (
             <div key={server.id} className="p-6 rounded-[2.5rem] bg-white/[0.02] border border-white/5 flex flex-col gap-5 group hover:border-vox-primary/30 transition-all relative overflow-hidden">
                <div className="flex justify-between items-start z-10">
                   <div className="flex flex-col gap-1">

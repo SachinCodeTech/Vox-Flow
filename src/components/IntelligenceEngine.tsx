@@ -3,21 +3,21 @@ import { useWorkflowStore } from '../store/useWorkflowStore';
 
 const SAMPLE_INSIGHTS: any[] = [
   { type: 'optimization', title: 'Workflow Bottleneck', description: 'CAD Archive step is taking 40% longer than average in Arch Dept.', impact: 'medium' },
-  { type: 'risk', title: 'Storage Threshold', description: 'NAS Archive is approaching 90% capacity. Predictive overflow in 3 days.', impact: 'high' },
-  { type: 'anomaly', title: 'Unusual Access', description: 'Higher than normal webhook triggers detected from external vendor.', impact: 'low' },
-  { type: 'optimization', title: 'Auto-Recovery Opportunity', description: 'AI suggests adding a Security Gate before Global Mirror sync.', impact: 'medium' }
+  { type: 'risk', title: 'GitHub Connectivity', description: 'Primary GitHub portal unresponsive. Initiating automated failover backup sync.', impact: 'high' },
+  { type: 'anomaly', title: 'AI Studio Latency', description: 'Higher than normal API response times from Google AI Studio services.', impact: 'low' },
+  { type: 'optimization', title: 'Auto-Recovery Opportunity', description: 'AI suggests adding a Secondary Mirror for GitHub repository redundancy.', impact: 'medium' }
 ];
 
 const AGENT_ACTIONS: Record<string, string[]> = {
   'archive-001': [
     'Compressed 5TB CAD archive data at [TS] UTC',
     'Defragmented NAS Sector 7-B - 100% Integrity',
-    'Optimized Archival Vault: Reduced footprint by 12%'
+    'GitHub Mirror: Successfully archived [Repo_Backup_2024]'
   ],
   'coord-001': [
     'Resolved 4 scheduling conflicts in Arch Dept at [TS] UTC',
-    'Predicted optimal meeting buffer for Team 3 sync',
-    'Synchronized Global Mirror with Frankfurt node'
+    'Google AI Studio Sync: Validated project assets integrity',
+    'Rerouted traffic to Secondary GitHub Mirror due to downtime'
   ],
   'cad-001': [
     'Validated Layer 0 compliance for Project_Alpha at [TS] UTC',
@@ -81,6 +81,7 @@ export const IntelligenceEngine = () => {
 
     // 3. Simulating Agent Activity (Every 8s)
     const agentInterval = setInterval(() => {
+      if (agents.length === 0) return;
       const agent = agents[Math.floor(Math.random() * agents.length)];
       const possibleActions = AGENT_ACTIONS[agent.id] || ['Processing dynamic logic at [TS] UTC'];
       let action = possibleActions[Math.floor(Math.random() * possibleActions.length)];

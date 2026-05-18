@@ -10,10 +10,14 @@ import { InfoModal } from './components/InfoModal';
 import { NeuralMap } from './components/NeuralMap';
 import { CognitiveCosmos } from './components/CognitiveCosmos';
 import { ExecutiveAdvisor } from './components/ExecutiveAdvisor';
+import { MissionControl } from './components/MissionControl';
 import { DigitalTwin } from './components/DigitalTwin';
 import { GovernanceHub } from './components/GovernanceHub';
 import { IntelligenceEngine } from './components/IntelligenceEngine';
 import { useWorkflowStore } from './store/useWorkflowStore';
+import { auth, db } from './lib/firebase';
+import { onAuthStateChanged } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
 import { cn } from './lib/utils';
 import { CommandBar } from './components/CommandBar';
 import { Header } from './components/Header';
@@ -23,6 +27,11 @@ import { AboutPage } from './components/AboutPage';
 import { UserGuide } from './components/UserGuide';
 import { NotFound } from './components/NotFound';
 import { CinematicOverlay } from './components/CinematicOverlay';
+import { LoginScreen } from './components/LoginScreen';
+import { CommandPalette } from './components/CommandPalette';
+import { StatusBar } from './components/StatusBar';
+import { NotificationSystem } from './components/NotificationSystem';
+import { SystemDock } from './components/SystemDock';
 
 export default function App() {
   const [showStartScreen, setShowStartScreen] = useState(true);
@@ -37,9 +46,47 @@ export default function App() {
     currentWorkspaceId,
     switchWorkspace,
     isSidebarOpen,
-    toggleSidebar
+    toggleSidebar,
+    currentUser,
+    setCurrentUser
   } = useWorkflowStore();
   
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        try {
+          const userDoc = await getDoc(doc(db, 'users', user.uid));
+          if (userDoc.exists()) {
+            const userData = userDoc.data();
+            setCurrentUser({
+              id: user.uid,
+              name: userData.displayName || user.email?.split('@')[0] || 'User',
+              role: userData.role || 'Architect',
+              deptId: userData.deptId || 'dept-01'
+            });
+          } else {
+            setCurrentUser({
+              id: user.uid,
+              name: user.displayName || user.email?.split('@')[0] || 'User',
+              role: 'Architect',
+              deptId: 'dept-01'
+            });
+          }
+        } catch (error) {
+          console.error("Error fetching user profile:", error);
+        }
+      } else {
+        // Only reset if not a dev (false access) user
+        const current = useWorkflowStore.getState().currentUser;
+        if (!current || !current.id.startsWith('dev-')) {
+          setCurrentUser(null);
+        }
+      }
+    });
+
+    return () => unsubscribe();
+  }, [setCurrentUser]);
+
   const activeWorkspace = workspaces.find(w => w.id === currentWorkspaceId);
 
   const handleNewFlow = () => {
@@ -78,6 +125,13 @@ export default function App() {
 
   return (
     <div className="flex h-svh w-screen bg-vox-bg text-white font-sans selection:bg-vox-primary/30 selection:text-vox-primary overflow-hidden">
+      <CommandPalette />
+      <StatusBar />
+      <NotificationSystem />
+      <SystemDock />
+      <AnimatePresence>
+        {!currentUser && <LoginScreen />}
+      </AnimatePresence>
       <CinematicOverlay />
       <AnimatePresence>
         {showStartScreen && <StartScreen onStart={handleStart} />}
@@ -92,19 +146,15 @@ export default function App() {
            <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-vox-primary/10 blur-[120px] rounded-full" />
            <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-vox-secondary/5 blur-[150px] rounded-full" />
         </div>
+        {/* In-app Navigation Layer (Desktop Focus) */}
         {/* Header Component */}
-        <AnimatePresence>
-          {!isFocusMode && (
-            <Header 
-              currentWorkspace={currentWorkspaceId}
-              onSwitchWorkspace={switchWorkspace}
-              workspaces={workspaces}
-              onSetViewMode={setViewMode}
-              viewMode={viewMode}
-              onFocusMode={() => setIsFocusMode(true)}
-            />
-          )}
-        </AnimatePresence>
+        <Header 
+          currentWorkspace={currentWorkspaceId}
+          onSwitchWorkspace={switchWorkspace}
+          workspaces={workspaces}
+          onSetViewMode={setViewMode}
+          viewMode={viewMode}
+        />
 
         {/* Mode-based Content */}
         <div className="flex-1 flex overflow-hidden relative bg-[#050816]">
@@ -153,6 +203,8 @@ export default function App() {
                   <ExecutiveAdvisor />
                 ) : viewMode === 'governance' ? (
                   <GovernanceHub />
+                ) : viewMode === 'mission' ? (
+                  <MissionControl />
                 ) : viewMode === 'info' ? (
                   <SystemInfoPage onBack={() => setViewMode('canvas')} />
                 ) : viewMode === 'privacy' ? (
@@ -169,43 +221,6 @@ export default function App() {
           </div>
         </div>
 
-        {/* Floating Command Bar */}
-        {!isFocusMode && (
-          <div className="fixed bottom-24 sm:bottom-20 md:bottom-12 left-1/2 -translate-x-1/2 z-[45] w-full px-4 sm:px-0 pointer-events-none">
-            <div className="pointer-events-auto">
-              <CommandBar />
-            </div>
-          </div>
-        )}
-
-        {/* Exit Focus Mode Button */}
-        {isFocusMode && (
-          <button 
-            onClick={() => setIsFocusMode(false)}
-            className="fixed top-6 right-6 md:top-8 md:left-1/2 md:-translate-x-1/2 px-4 py-1.5 sm:px-6 sm:py-2 rounded-full bg-vox-bg/90 backdrop-blur-md border border-white/20 text-[9px] sm:text-[10px] font-black uppercase tracking-[0.2em] hover:border-vox-primary/50 hover:bg-vox-bg transition-all z-[100] flex items-center gap-2 shadow-[0_0_30px_rgba(0,0,0,0.8)]"
-          >
-            <Zap size={14} className="text-vox-primary fill-vox-primary/20" /> 
-            <span className="hidden md:inline">Exit Focus Mode</span>
-            <span className="md:hidden">Exit</span>
-          </button>
-        )}
-
-        {/* Mobile Nav Bar */}
-        <AnimatePresence>
-          {!isFocusMode && (
-            <motion.div 
-              initial={{ y: 100 }}
-              animate={{ y: 0 }}
-              exit={{ y: 100 }}
-              className="md:hidden fixed bottom-0 left-0 right-0 h-20 pb-4 bg-black/80 backdrop-blur-2xl border-t border-white/5 flex items-center justify-around px-4 z-[50] shadow-[0_-10px_40px_rgba(0,0,0,0.8)]"
-            >
-               <MobileNavButton active={viewMode === 'canvas'} onClick={() => setViewMode('canvas')} icon={Layers} label="Build" />
-               <MobileNavButton active={viewMode === 'cosmos'} onClick={() => setViewMode('cosmos')} icon={Globe} label="Cosmos" />
-               <MobileNavButton active={viewMode === 'advisor'} onClick={() => setViewMode('advisor')} icon={Zap} label="Exec" />
-               <MobileNavButton active={viewMode === 'governance'} onClick={() => setViewMode('governance')} icon={Shield} label="Vault" />
-            </motion.div>
-          )}
-        </AnimatePresence>
       </main>
 
       {/* Decorative Orbs */}

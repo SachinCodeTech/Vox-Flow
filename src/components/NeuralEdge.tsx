@@ -2,8 +2,12 @@ import React from 'react';
 import { EdgeProps, getBezierPath } from 'reactflow';
 import { motion } from 'motion/react';
 
+import { useWorkflowStore } from '../store/useWorkflowStore';
+
 export const NeuralEdge = ({
   id,
+  source,
+  target,
   sourceX,
   sourceY,
   targetX,
@@ -14,7 +18,7 @@ export const NeuralEdge = ({
   markerEnd,
   data,
 }: EdgeProps) => {
-  const [edgePath, labelX, labelY] = getBezierPath({
+  const [edgePath] = getBezierPath({
     sourceX,
     sourceY,
     sourcePosition,
@@ -23,7 +27,16 @@ export const NeuralEdge = ({
     targetY,
   });
 
-  const isExecuting = data?.isExecuting || false;
+  const nodes = useWorkflowStore(state => state.nodes);
+  const sourceNode = nodes.find(n => n.id === source);
+  const targetNode = nodes.find(n => n.id === target);
+  
+  const isSourceRunning = sourceNode?.data.status === 'running';
+  const isSourceSuccess = sourceNode?.data.status === 'success';
+  const isTargetRunning = targetNode?.data.status === 'running';
+
+  const isExecuting = isSourceRunning || (isSourceSuccess && isTargetRunning);
+  const isAmbient = useWorkflowStore(state => state.isExecutionMode || state.isExecuting);
 
   return (
     <>
@@ -41,7 +54,7 @@ export const NeuralEdge = ({
         fill="none"
         stroke="#00E5FF"
         strokeWidth={isExecuting ? 12 : 6}
-        strokeOpacity={isExecuting ? 0.3 : 0.1}
+        strokeOpacity={isExecuting ? 0.3 : isAmbient ? 0.15 : 0.05}
         strokeLinecap="round"
         style={{ filter: 'blur(12px)', transition: 'all 0.5s ease' }}
       />
@@ -50,9 +63,9 @@ export const NeuralEdge = ({
       <path
         d={edgePath}
         fill="none"
-        stroke="#00E5FF"
+        stroke={isExecuting ? "#00E5FF" : isAmbient ? "#5DA9FF" : "rgba(255,255,255,0.05)"}
         strokeWidth={isExecuting ? 4 : 2}
-        strokeOpacity={isExecuting ? 0.5 : 0.2}
+        strokeOpacity={isExecuting ? 0.5 : isAmbient ? 0.2 : 0.1}
         strokeLinecap="round"
         style={{ filter: 'blur(2px)', transition: 'all 0.5s ease' }}
       />
@@ -61,15 +74,15 @@ export const NeuralEdge = ({
       <path
         d={edgePath}
         fill="none"
-        stroke="#00E5FF"
+        stroke={isExecuting ? "#00E5FF" : isAmbient ? "#5DA9FF" : "rgba(255,255,255,0.1)"}
         strokeWidth={isExecuting ? 1.5 : 0.8}
         strokeLinecap="round"
         markerEnd={markerEnd}
         style={{ 
           ...style, 
           transition: 'all 0.5s ease', 
-          strokeOpacity: 0.8, 
-          filter: 'drop-shadow(0 0 2px #00E5FF)',
+          strokeOpacity: isExecuting ? 1 : 0.4, 
+          filter: isExecuting ? 'drop-shadow(0 0 4px #00E5FF)' : 'none',
           zIndex: 100
         }}
       />
@@ -82,7 +95,7 @@ export const NeuralEdge = ({
         strokeWidth={isExecuting ? 2 : 1}
         strokeLinecap="round"
         initial={{ opacity: 0.3 }}
-        animate={{ opacity: isExecuting ? [0.4, 1, 0.4] : [0.1, 0.3, 0.1] }}
+        animate={{ opacity: isExecuting ? [0.4, 1, 0.4] : isAmbient ? [0.1, 0.3, 0.1] : 0 }}
         transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
         style={{ filter: 'blur(0.5px)' }}
       />
@@ -91,17 +104,17 @@ export const NeuralEdge = ({
       <motion.path
         d={edgePath}
         fill="none"
-        stroke="#FFFFFF"
-        strokeWidth={isExecuting ? 1.5 : 0.8}
+        stroke={isExecuting ? "#FFFFFF" : "#00E5FF"}
+        strokeWidth={isExecuting ? 2 : 0.8}
         strokeDasharray="4, 60"
         strokeDashoffset="0"
         initial={{ strokeDashoffset: 100, opacity: 0 }}
         animate={{ 
           strokeDashoffset: [0, -300], 
-          opacity: isExecuting ? 1 : 0.4,
+          opacity: isExecuting ? 1 : isAmbient ? 0.4 : 0,
         }}
         transition={{ 
-          duration: isExecuting ? 1.5 : 3, 
+          duration: isExecuting ? 1 : 3, 
           repeat: Infinity, 
           ease: "linear" 
         }}

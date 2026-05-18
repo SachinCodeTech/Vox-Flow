@@ -110,10 +110,14 @@ export type WorkflowState = {
   setEdges: (edges: Edge[]) => void;
   isExecuting: boolean;
   setIsExecuting: (executing: boolean) => void;
+  executionState: 'idle' | 'running' | 'paused' | 'stepping';
+  setExecutionState: (state: 'idle' | 'running' | 'paused' | 'stepping') => void;
+  executionHistory: { nodes: Node[], edges: Edge[] }[];
+  executionStep: number;
   isExecutionMode: boolean;
   toggleExecutionMode: () => void;
-  viewMode: 'canvas' | 'dashboard' | 'neural' | 'governance' | 'cosmos' | 'advisor' | 'info' | 'privacy' | 'about' | 'guide';
-  setViewMode: (mode: 'canvas' | 'dashboard' | 'neural' | 'governance' | 'cosmos' | 'advisor' | 'info' | 'privacy' | 'about' | 'guide') => void;
+  viewMode: 'canvas' | 'dashboard' | 'neural' | 'governance' | 'cosmos' | 'advisor' | 'info' | 'privacy' | 'about' | 'guide' | 'mission';
+  setViewMode: (mode: 'canvas' | 'dashboard' | 'neural' | 'governance' | 'cosmos' | 'advisor' | 'info' | 'privacy' | 'about' | 'guide' | 'mission') => void;
   deselectNodes: () => void;
   setNodesHidden: (nodeIds: string[], hidden: boolean) => void;
   deleteNode: (nodeId: string) => void;
@@ -158,8 +162,8 @@ export type WorkflowState = {
   updateNodeData: (nodeId: string, data: any) => void;
   createGroup: (nodeIds: string[], label?: string) => void;
   // Context Menu
-  contextMenu: { id: string, x: number, y: number } | null;
-  setContextMenu: (menu: { id: string, x: number, y: number } | null) => void;
+  contextMenu: { id?: string, x: number, y: number, type: 'node' | 'canvas' } | null;
+  setContextMenu: (menu: { id?: string, x: number, y: number, type: 'node' | 'canvas' } | null) => void;
   // Org Structure
   organization: {
     name: string;
@@ -167,104 +171,250 @@ export type WorkflowState = {
     users: { id: string, name: string, role: string, deptId: string }[];
   };
   // Historical Health Data
-  healthHistory: { timestamp: string, stability: number, cognition: number, velocity: number, stress: number }[];
+  healthHistory: { time: string, value: number, stability: number, cognition: number, velocity: number, stress: number }[];
   addHealthSnap: (snap: { stability: number, cognition: number, velocity: number, stress: number }) => void;
+  // Strategic Objectives
+  objectives: { id: string, label: string, progress: number }[];
+  updateObjective: (id: string, progress: number) => void;
+  // System Vitals
+  systemVitals: {
+    threads: number;
+    meshLoad: number;
+    kernelTemp: number;
+    storageUsed: string;
+    networkOut: string;
+    infrastructure: { id: string, name: string, load: string, storage: string, temp: string }[];
+  };
   // Templates
   addTemplate: (template: { name: string, nodes: any[], edges: any[] }) => void;
   // Agent Management
   addAgent: (agent: { id: string, name: string, role: string, status: 'idle' | 'executing', lastAction: string }) => void;
   updateAgent: (id: string, updates: Partial<EnterpriseAgent>) => void;
+  // Logs & History
+  systemLogs: { id: string, timestamp: string, level: 'info' | 'warn' | 'error' | 'sentient', message: string, source: string }[];
+  addLog: (log: { level: 'info' | 'warn' | 'error' | 'sentient', message: string, source: string }) => void;
+  clearLogs: () => void;
+  notifications: { id: string, title: string, message: string, type: 'info' | 'success' | 'warn' | 'error', timestamp: number }[];
+  addNotification: (notif: { title: string, message: string, type: 'info' | 'success' | 'warn' | 'error' }) => void;
+  removeNotification: (id: string) => void;
   geminiApiKey: string;
   setGeminiApiKey: (key: string) => void;
+  // Execution
+  executeSequence: () => Promise<void>;
+  pauseExecution: () => void;
+  resumeExecution: () => void;
+  stepExecution: () => Promise<void>;
+  rewindExecution: () => void;
+  analyzeWorkflow: () => Promise<void>;
+  // Auth & Roles
+  currentUser: { id: string, name: string, role: string, deptId: string } | null;
+  setCurrentUser: (user: { id: string, name: string, role: string, deptId: string } | null) => void;
+  login: (email: string, password: string) => Promise<void>;
+  logout: () => Promise<void>;
+  // Templates & Sub-workflows
+  customTemplates: { id: string, name: string, nodes: Node[], edges: Edge[] }[];
+  saveAsTemplate: (name: string, nodeIds: string[]) => void;
+  // Search
+  searchQuery: string;
+  setSearchQuery: (query: string) => void;
 };
 
 const getDefaultOrg = () => ({
-  name: 'ABC Architects Pvt Ltd',
-  departments: [
-    { id: 'dept-01', name: 'Board / Directors', roles: ['Principal Architect', 'Director', 'Board Member'] },
-    { id: 'dept-02', name: 'Administration', roles: ['Admin Head', 'Office Assistant'] },
-    { id: 'dept-03', name: 'HR Department', roles: ['HR Manager'] },
-    { id: 'dept-04', name: 'Accounts / Finance', roles: ['Accountant'] },
-    { id: 'dept-05', name: 'IT / Server Control', roles: ['IT Administrator'] },
-    { id: 'dept-06', name: 'Architecture Department', roles: ['Senior Architect', 'Junior Architect', 'Draughtsman', 'BIM Modeler'] },
-    { id: 'dept-07', name: 'Interior Department', roles: ['Interior Designer', 'Senior Interior Architect'] },
-  ],
-  users: [
-    { id: 'u-1', name: 'Alex Rivera', role: 'Principal Architect', deptId: 'dept-01' },
-    { id: 'u-2', name: 'Sarah Chen', role: 'Senior Architect', deptId: 'dept-06' },
-    { id: 'u-3', name: 'Michael Ross', role: 'IT Administrator', deptId: 'dept-05' },
-  ]
+  name: 'VoxFlow Sentient Corp',
+  departments: [],
+  users: []
 });
 
-const getDefaultNodes = (): Node[] => [
-  {
-    id: 'trigger-0',
-    type: 'trigger',
-    position: { x: 50, y: 150 },
-    data: { label: 'Operational Core', icon: 'Activity' },
-  }
-];
+const getDefaultNodes = (): Node[] => [];
 
 const DEFAULT_WORKSPACE: Workspace = {
-  id: 'arch-dept-001',
-  name: 'Architecture Dept',
-  nodes: getDefaultNodes(),
-  edges: [],
+  id: 'init-core',
+  name: 'AI Studio & GitHub Sync',
+  nodes: [
+    { 
+      id: 'ai-studio-trigger', 
+      type: 'trigger', 
+      data: { label: 'Google AI Studio', icon: 'AI', status: 'success' }, 
+      position: { x: 100, y: 150 } 
+    },
+    { 
+      id: 'github-backup', 
+      type: 'action', 
+      data: { label: 'Backup Github Repository', icon: 'Zip', status: 'idle' }, 
+      position: { x: 450, y: 150 } 
+    },
+    { 
+      id: 'sync-status-check', 
+      type: 'action', 
+      data: { label: 'Connectivity Sentinel', icon: 'Globe', status: 'idle' }, 
+      position: { x: 800, y: 150 } 
+    }
+  ],
+  edges: [
+    { id: 'e1', source: 'ai-studio-trigger', target: 'github-backup', animated: true, type: 'neural' },
+    { id: 'e2', source: 'github-backup', target: 'sync-status-check', animated: true, type: 'neural' }
+  ],
   lastUpdated: new Date().toISOString()
 };
 
 export const useWorkflowStore = create<WorkflowState>((set, get) => ({
   workspaces: [DEFAULT_WORKSPACE],
-  currentWorkspaceId: 'arch-dept-001',
+  currentWorkspaceId: DEFAULT_WORKSPACE.id,
   geminiApiKey: '',
   setGeminiApiKey: (geminiApiKey) => set({ geminiApiKey }),
-  nodes: DEFAULT_WORKSPACE.nodes,
-  edges: DEFAULT_WORKSPACE.edges,
+  currentUser: null,
+  setCurrentUser: (user) => set({ currentUser: user }),
+  login: async () => {}, // Handled by SDK
+  logout: async () => {
+    try {
+      const { auth } = await import('../lib/firebase');
+      const { signOut } = await import('firebase/auth');
+      await signOut(auth);
+      set({ currentUser: null });
+    } catch (error) {
+      console.error("Logout error:", error);
+      set({ currentUser: null }); // Ensure clear even on error
+    }
+  },
+  customTemplates: [],
+  saveAsTemplate: (name, nodeIds) => {
+    const nodes = get().nodes.filter(n => nodeIds.includes(n.id));
+    const edges = get().edges.filter(e => nodeIds.includes(e.source) && nodeIds.includes(e.target));
+    const newTemplate = { id: `template-${Date.now()}`, name, nodes, edges };
+    set(state => ({ customTemplates: [...state.customTemplates, newTemplate] }));
+  },
+  searchQuery: '',
+  setSearchQuery: (searchQuery) => set({ searchQuery }),
+  
+  systemLogs: [],
+  addLog: (log) => set(state => ({ 
+    systemLogs: [{ id: `log-${Date.now()}-${Math.random()}`, timestamp: new Date().toLocaleTimeString(), ...log }, ...state.systemLogs].slice(0, 100) 
+  })),
+  clearLogs: () => set({ systemLogs: [] }),
+
+  notifications: [],
+  addNotification: (notif) => set(state => ({
+    notifications: [...state.notifications, { id: `notif-${Date.now()}-${Math.random()}`, ...notif, timestamp: Date.now() }]
+  })),
+  removeNotification: (id) => set(state => ({
+    notifications: state.notifications.filter(n => n.id !== id)
+  })),
+
+  analyzeWorkflow: async () => {
+    const { nodes, edges, addStrategicAdvice, updateAgent, addInsight, recordMemory, addLog } = get();
+    
+    addLog({ level: 'sentient', message: 'Initiating neural analysis mesh...', source: 'GEMINI_ORACLE' });
+
+    try {
+      const response = await fetch('/api/analyze-workflow', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nodes, edges })
+      });
+
+      if (!response.ok) throw new Error('Analysis failed');
+      const data = await response.json();
+
+      if (data.insights) {
+        data.insights.forEach((insight: any) => {
+          addStrategicAdvice({
+            category: Math.random() > 0.5 ? 'velocity' : 'governance',
+            title: insight.title,
+            recommendation: insight.description,
+            rationale: `Neural analysis indicates ${insight.impact} impact on enterprise stability.`,
+            actionable: insight.impact === 'high',
+            confidence: 0.85 + Math.random() * 0.1
+          });
+
+          addInsight({
+            type: insight.impact === 'high' ? 'risk' : 'optimization',
+            title: insight.title,
+            description: insight.description,
+            impact: insight.impact
+          });
+        });
+
+        recordMemory({
+          pattern: `Architecture Scan: ${nodes.length} nodes analyzed`,
+          occurrence: 'emerging',
+          context: 'AI Architect triggered manual optimization scan.'
+        });
+      }
+    } catch (error) {
+      console.error('Analysis error:', error);
+      addInsight({
+        type: 'anomaly',
+        title: 'Neural Link Severed',
+        description: 'Failed to communicate with AI Operations Core.',
+        impact: 'low'
+      });
+    } finally {
+      updateAgent('coord-001', { status: 'idle', lastAction: 'Analysis complete' });
+      updateAgent('guard-001', { status: 'idle', lastAction: 'Audit finished' });
+    }
+  },
+
+  nodes: [],
+  edges: [],
   runtimeJobs: [],
   aiInsights: [],
   agents: [
-    { id: 'archive-001', name: 'Archive Agent', role: 'Storage Optimization', status: 'idle', lastAction: 'Scanned backups' },
-    { id: 'coord-001', name: 'Coordination Agent', role: 'Schedule Management', status: 'idle', lastAction: 'Resolved meeting conflict' },
-    { id: 'cad-001', name: 'CAD Review Agent', role: 'Engineering Standards', status: 'idle', lastAction: 'Verified layer integrity' },
-    { id: 'guard-001', name: 'Guardian Agent', role: 'Security Monitoring', status: 'idle', lastAction: 'Audited SSH access' }
+    { id: 'archive-001', name: 'Archive Agent', role: 'NAS Optimizer & Storage Guardian', status: 'idle', lastAction: 'Systems ready.' },
+    { id: 'coord-001', name: 'Coord Agent', role: 'Global Node Synchronizer', status: 'idle', lastAction: 'Monitoring mesh latency.' },
+    { id: 'cad-001', name: 'CAD Agent', role: 'Geometric Logic Validator', status: 'idle', lastAction: 'Idle in Forge.' },
+    { id: 'guard-001', name: 'Guardian Agent', role: 'Zero-Trust Policy Enforcer', status: 'idle', lastAction: 'Perimeter secure.' }
   ],
-  policies: [
-    { id: 'p1', name: 'Data Sovereignty Protocol', rules: ['Local retention only', 'Zero-trust export'], status: 'active', severity: 'critical' },
-    { id: 'p2', name: 'CAD Export Governance', rules: ['Architect approval required', 'Watermark injection'], status: 'active', severity: 'standard' },
-    { id: 'p3', name: 'AI Operational Limits', rules: ['Max compute threshold: 85%', 'Manual override enabled'], status: 'evaluating', severity: 'standard' }
-  ],
+  policies: [],
   events: [],
   simulations: [],
   strategicAdvice: [],
   institutionalMemory: [],
-  health: { stability: 0.98, cognition: 0.92, velocity: 0.85, stress: 0.12 },
+  health: { stability: 1, cognition: 1, velocity: 1, stress: 0 },
   isSidebarOpen: true,
   toggleSidebar: () => set((state) => ({ isSidebarOpen: !state.isSidebarOpen })),
   viewMode: 'canvas',
   setViewMode: (viewMode) => set({ viewMode }),
-  contextMenu: null,
-  setContextMenu: (contextMenu) => set({ contextMenu }),
-  organization: getDefaultOrg(),
-
   healthHistory: Array.from({ length: 24 }).map((_, i) => ({
-    timestamp: new Date(Date.now() - (23 - i) * 3600000).toISOString(),
+    time: `${i}:00`,
+    value: 70 + Math.random() * 20,
     stability: 0.9 + Math.random() * 0.08,
     cognition: 0.85 + Math.random() * 0.1,
     velocity: 0.7 + Math.random() * 0.2,
     stress: 0.1 + Math.random() * 0.2,
   })),
+  contextMenu: null,
+  setContextMenu: (contextMenu) => set({ contextMenu }),
+  organization: getDefaultOrg(),
+
+  objectives: [
+    { id: 'obj-1', label: 'Sovereign Efficiency', progress: 0 },
+    { id: 'obj-2', label: 'Policy Integration', progress: 0 },
+    { id: 'obj-3', label: 'Autonomous Scaling', progress: 0 }
+  ],
+  updateObjective: (id, progress) => set(state => ({
+    objectives: state.objectives.map(o => o.id === id ? { ...o, progress } : o)
+  })),
+
+  systemVitals: {
+    threads: 492,
+    meshLoad: 14,
+    kernelTemp: 34,
+    storageUsed: '9.2 TB',
+    networkOut: '1.4 GB/s',
+    infrastructure: [
+      { id: 'CORE-S1', name: 'Primary Mainframe', load: '42%', storage: '12PB', temp: '32°C' },
+      { id: 'CAD-ARX', name: 'Deep Storage Vault', load: '18%', storage: '850TB', temp: '18°C' },
+      { id: 'AI-NODE', name: 'Cognitive Cluster', load: '94%', storage: '2PB', temp: '44°C' },
+      { id: 'SEC-GWY', name: 'Neural Firewall', load: '08%', storage: '120TB', temp: '22°C' }
+    ]
+  },
 
   addHealthSnap: (snap) => set(state => ({
-    healthHistory: [...state.healthHistory.slice(1), { timestamp: new Date().toISOString(), ...snap }]
+    healthHistory: [...state.healthHistory.slice(1), { time: new Date().toLocaleTimeString(), value: snap.stability * 100, ...snap }]
   })),
 
   addTemplate: (template) => {
-    // In a real app we'd save to a backend/DB. For now we can just log or push to a local list if we had one.
-    // The user wants to see it in the sidebar. We'll need a state for custom templates.
-    set(state => ({
-      // We'll use a hidden state or just a notification for now, or update the sidebar's templates if they were in store.
-      // Let's assume we want to track them.
-    }));
+    // No-op for now as it's handled by other means
   },
 
   addAgent: (agent) => set(state => ({ agents: [...state.agents, agent] })),
@@ -469,6 +619,139 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
   },
   isExecuting: false,
   setIsExecuting: (isExecuting: boolean) => set({ isExecuting }),
+  executionState: 'idle',
+  setExecutionState: (executionState) => set({ executionState }),
+  executionHistory: [],
+  executionStep: 0,
+  
+  pauseExecution: () => set({ executionState: 'paused' }),
+  resumeExecution: () => set({ executionState: 'running' }),
+  
+  rewindExecution: () => {
+    const { executionHistory } = get();
+    if (executionHistory.length > 0) {
+      const lastState = executionHistory[executionHistory.length - 1];
+      set(state => ({
+        nodes: lastState.nodes,
+        edges: lastState.edges,
+        executionHistory: state.executionHistory.slice(0, -1),
+        executionStep: Math.max(0, state.executionStep - 1)
+      }));
+    }
+  },
+
+  executeSequence: async () => {
+    const { nodes, edges, setIsExecuting, updateNodeData, addRuntimeJob, updateAgent, addLog } = get();
+    set({ executionState: 'running', executionHistory: [], executionStep: 0 });
+    setIsExecuting(true);
+    
+    addLog({ level: 'sentient', message: 'Initiating global neural logic pulse...', source: 'CORE_ORCHESTRATOR' });
+    updateAgent('cad-001', { status: 'executing', lastAction: 'Overseeing logic pulse' });
+    updateAgent('guard-001', { status: 'executing', lastAction: 'Monitoring security integrity' });
+    
+    // Reset all nodes to idle status
+    const resetNodes = nodes.map(n => ({ ...n, data: { ...n.data, status: 'idle' } }));
+    set({ nodes: resetNodes });
+
+    const queue = nodes.filter(n => n.type === 'trigger');
+    const processed = new Set<string>();
+
+    while (queue.length > 0) {
+      // Check pause state
+      while (get().executionState === 'paused') {
+        await new Promise(r => setTimeout(r, 100));
+      }
+
+      if (get().executionState === 'idle' && get().isExecuting) break; 
+
+      const node = queue.shift()!;
+      if (processed.has(node.id)) continue;
+
+      // Check if all prerequisites are met
+      const prerequisites = edges.filter(e => e.target === node.id).map(e => e.source);
+      const allPreReqsMet = prerequisites.every(id => processed.has(id));
+
+      if (node.type !== 'trigger' && !allPreReqsMet) continue;
+
+      addLog({ level: 'info', message: `Executing node [${node.data.label || node.id}]`, source: 'RUNTIME_ENGINE' });
+
+      // Save history for rewind
+      set(state => ({ 
+        executionHistory: [...state.executionHistory, { nodes: JSON.parse(JSON.stringify(state.nodes)), edges: JSON.parse(JSON.stringify(state.edges)) }],
+        executionStep: state.executionStep + 1
+      }));
+
+      // Execute node
+      updateNodeData(node.id, { status: 'running' });
+      addRuntimeJob({ workspaceId: get().currentWorkspaceId, nodeId: node.id, status: 'running' });
+      
+      if (node.data.label === 'AI Trigger') {
+        const condition = node.data.params?.condition || 'No condition defined';
+        addLog({ level: 'sentient', message: `Evaluating AI Condition: "${condition}"`, source: 'GEMINI_ORACLE' });
+        await new Promise(r => setTimeout(r, 1500)); // Mimic complex analysis
+        addLog({ level: 'sentient', message: 'Condition matched. Activating downstream mesh.', source: 'GEMINI_ORACLE' });
+      } else if (node.data.label === 'Figma Hook') {
+        const fileRef = node.data.params?.fileRef || 'UNKNOWN_REF';
+        addLog({ level: 'info', message: `Nexus established with Figma file [${fileRef}]`, source: 'FIGMA_BRIDGE' });
+      } else if (node.data.label === 'VoxCadd Sync') {
+        addLog({ level: 'info', message: 'Synchronizing geometric primitives with VoxCadd Runtime', source: 'VOXCADD_CORE' });
+      }
+
+      // Simulate work
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      if (node.data.label === 'Human Approval') {
+        addLog({ level: 'warn', message: 'Awaiting human authorization for node clearance', source: 'SECURITY_MESH' });
+        updateNodeData(node.id, { status: 'awaiting' });
+        // Poll for user action
+        let resolved = false;
+        while (!resolved) {
+          await new Promise(r => setTimeout(r, 500));
+          const currentNode = get().nodes.find(n => n.id === node.id);
+          if (currentNode?.data.status === 'success' || currentNode?.data.status === 'failed') {
+            resolved = true;
+          }
+          if (get().executionState === 'idle') return; // Cancelled
+        }
+      } else {
+        const success = Math.random() > 0.05; 
+        const status = success ? 'success' : 'failed';
+        if (!success) addLog({ level: 'error', message: `Execution failed at node [${node.data.label}] - LOGIC_FAULT`, source: 'DIAGNOSTIC_SUB' });
+        updateNodeData(node.id, { status, lastRun: new Date().toLocaleTimeString() });
+        addRuntimeJob({ workspaceId: get().currentWorkspaceId, nodeId: node.id, status });
+      }
+
+      const finalNode = get().nodes.find(n => n.id === node.id);
+      if (finalNode?.data.status === 'success') {
+        processed.add(node.id);
+        const downstream = edges.filter(e => e.source === node.id).map(e => nodes.find(n => n.id === e.target)).filter(Boolean) as Node[];
+        queue.push(...downstream);
+      }
+
+      // If stepping, pause after each node
+      if (get().executionState === 'stepping') {
+        set({ executionState: 'paused' });
+      }
+    }
+
+    addLog({ level: 'sentient', message: 'Neural logic pulse completed successfully.', source: 'CORE_ORCHESTRATOR' });
+    updateAgent('cad-001', { status: 'idle', lastAction: 'Pulse execution complete' });
+    updateAgent('guard-001', { status: 'idle', lastAction: 'Mesh audit successful' });
+    set({ executionState: 'idle' });
+    setIsExecuting(false);
+  },
+
+  stepExecution: async () => {
+    const { executionState, resumeExecution } = get();
+    if (executionState === 'idle') {
+      set({ executionState: 'stepping' });
+      get().executeSequence();
+    } else {
+      set({ executionState: 'stepping' });
+      resumeExecution();
+    }
+  },
+
   isExecutionMode: false,
   toggleExecutionMode: () => set((state) => ({ isExecutionMode: !state.isExecutionMode })),
 
@@ -523,7 +806,7 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
     if (get().workspaces.length <= 1) return;
     const filtered = get().workspaces.filter(w => w.id !== id);
     set({ workspaces: filtered });
-    if (get().currentWorkspaceId === id) {
+    if (get().currentWorkspaceId === id && filtered.length > 0) {
       get().switchWorkspace(filtered[0].id);
     }
     get().saveWorkflow();
@@ -611,15 +894,24 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
   loadWorkflow: () => {
     const saved = localStorage.getItem('voxflow-enterprise-data');
     if (saved) {
-      const { workspaces, currentWorkspaceId } = JSON.parse(saved);
-      const current = workspaces.find((w: Workspace) => w.id === currentWorkspaceId) || workspaces[0];
-      set({ 
-        workspaces, 
-        currentWorkspaceId: current.id,
-        nodes: current.nodes,
-        edges: current.edges
-      });
-      return true;
+      try {
+        const { workspaces, currentWorkspaceId } = JSON.parse(saved);
+        if (!Array.isArray(workspaces) || workspaces.length === 0) return false;
+        
+        const current = workspaces.find((w: Workspace) => w && w.id === currentWorkspaceId) || workspaces[0];
+        if (!current) return false;
+
+        set({ 
+          workspaces, 
+          currentWorkspaceId: current.id,
+          nodes: current.nodes || [],
+          edges: current.edges || []
+        });
+        return true;
+      } catch (e) {
+        console.error("Failed to parse saved workflow:", e);
+        return false;
+      }
     }
     return false;
   },
@@ -632,4 +924,4 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
     );
     set({ workspaces });
   },
-}));
+}))

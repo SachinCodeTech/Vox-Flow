@@ -21,6 +21,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { cn } from './lib/utils';
 import { CommandBar } from './components/CommandBar';
 import { Header } from './components/Header';
+import { BootScreen } from './components/BootScreen';
 import { SystemInfoPage } from './components/SystemInfoPage';
 import { PrivacyPolicy } from './components/PrivacyPolicy';
 import { AboutPage } from './components/AboutPage';
@@ -34,6 +35,7 @@ import { NotificationSystem } from './components/NotificationSystem';
 import { SystemDock } from './components/SystemDock';
 
 export default function App() {
+  const [isBooting, setIsBooting] = useState(true);
   const [showStartScreen, setShowStartScreen] = useState(true);
   const [isFocusMode, setIsFocusMode] = useState(false);
   const { 
@@ -51,6 +53,11 @@ export default function App() {
     setCurrentUser
   } = useWorkflowStore();
   
+  useEffect(() => {
+    const timer = setTimeout(() => setIsBooting(false), 5000);
+    return () => clearTimeout(timer);
+  }, []);
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
@@ -125,6 +132,9 @@ export default function App() {
 
   return (
     <div className="flex h-svh w-screen bg-vox-bg text-white font-sans selection:bg-vox-primary/30 selection:text-vox-primary overflow-hidden">
+      <AnimatePresence>
+        {isBooting && <BootScreen />}
+      </AnimatePresence>
       <CommandPalette />
       <StatusBar />
       <NotificationSystem />

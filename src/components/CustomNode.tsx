@@ -349,7 +349,7 @@ export const CustomNode = memo(({ id, data, selected, type, xPos, yPos, dragging
           </div>
           <div className="flex-1 flex flex-col justify-center min-w-0">
             <div className="flex items-center justify-between gap-2 mb-0.5">
-              <span className="text-[7px] font-black uppercase tracking-[0.4em] text-vox-primary/60 italic">
+              <span className="text-[8.5px] font-black uppercase tracking-[0.3em] text-vox-primary italic">
                 {type}_module
               </span>
               <div className={cn(
@@ -375,7 +375,7 @@ export const CustomNode = memo(({ id, data, selected, type, xPos, yPos, dragging
                 {data.label}
               </h4>
             )}
-            <span className="text-[8px] font-bold text-white/60 uppercase tracking-widest mt-1 block group-hover:text-white/80 transition-colors">
+            <span className="text-[8.5px] font-bold text-white/60 uppercase tracking-widest mt-1 block group-hover:text-white/90 transition-colors">
               Logic Hash: {id.split('-')[0]}
             </span>
           </div>
@@ -384,10 +384,10 @@ export const CustomNode = memo(({ id, data, selected, type, xPos, yPos, dragging
         {/* Neural Traffic Visualization */}
         <div className="mt-4 flex flex-col gap-2">
            <div className="flex items-center justify-between">
-              <span className="text-[7px] font-black text-white/40 uppercase tracking-widest">Signal Integrity</span>
-              <span className="text-[7px] font-mono text-vox-primary uppercase">99.8%</span>
+              <span className="text-[8px] font-black text-white/65 uppercase tracking-wider">Signal Integrity</span>
+              <span className="text-[8.5px] font-semibold font-mono text-vox-primary uppercase">99.8%</span>
            </div>
-           <div className="flex-1 h-1.5 bg-white/5 rounded-full overflow-hidden relative">
+           <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden relative">
               <motion.div 
                 animate={isExecuting ? { left: ["-100%", "200%"] } : {}}
                 transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
@@ -409,11 +409,11 @@ export const CustomNode = memo(({ id, data, selected, type, xPos, yPos, dragging
       />
       
       {/* HUD Info (Bottom Bar) */}
-      <div className="bg-black/20 border-t border-white/5 px-4 py-1.5 flex items-center justify-between">
-         <span className="text-[7px] font-black text-white/40 uppercase tracking-widest italic">
+      <div className="bg-black/45 border-t border-white/10 px-4 py-1.5 flex items-center justify-between">
+         <span className="text-[8px] font-black text-white/65 uppercase tracking-wider italic">
             Status: {isExecuting ? 'Exec' : 'Standby'}
          </span>
-         <span className="text-[7px] font-black text-vox-primary/40 uppercase tracking-tighter">
+         <span className="text-[8px] font-black text-vox-primary/80 uppercase tracking-widest">
             0X.42.FF
          </span>
       </div>

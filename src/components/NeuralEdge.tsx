@@ -43,46 +43,46 @@ export const NeuralEdge = ({
       {/* Interaction Path (Invisible but wider for selection) */}
       <path
         id={id}
-        style={{ fill: 'none', strokeOpacity: 0, strokeWidth: 20 }}
-        className="react-flow__edge-interaction"
+        style={{ fill: 'none', strokeOpacity: 0, strokeWidth: 24 }}
+        className="react-flow__edge-interaction cursor-pointer"
         d={edgePath}
       />
 
-      {/* Background Glow Path - Even Stronger */}
+      {/* Background Glow Path - Thicker and Much Brighter Cyan Glow */}
       <path
         d={edgePath}
         fill="none"
         stroke="#00E5FF"
-        strokeWidth={isExecuting ? 12 : 6}
-        strokeOpacity={isExecuting ? 0.3 : isAmbient ? 0.15 : 0.05}
+        strokeWidth={isExecuting ? 16 : 8}
+        strokeOpacity={isExecuting ? 0.45 : 0.25}
         strokeLinecap="round"
-        style={{ filter: 'blur(12px)', transition: 'all 0.5s ease' }}
+        style={{ filter: 'blur(10px)', transition: 'all 0.3s ease' }}
       />
 
-      {/* Secondary Glow (Tight) */}
+      {/* Secondary Glow (Tight definition glow) */}
       <path
         d={edgePath}
         fill="none"
-        stroke={isExecuting ? "#00E5FF" : isAmbient ? "#5DA9FF" : "rgba(255,255,255,0.05)"}
-        strokeWidth={isExecuting ? 4 : 2}
-        strokeOpacity={isExecuting ? 0.5 : isAmbient ? 0.2 : 0.1}
+        stroke="#00E5FF"
+        strokeWidth={isExecuting ? 6 : 3.5}
+        strokeOpacity={isExecuting ? 0.7 : 0.4}
         strokeLinecap="round"
-        style={{ filter: 'blur(2px)', transition: 'all 0.5s ease' }}
+        style={{ filter: 'blur(3px)', transition: 'all 0.3s ease' }}
       />
 
-      {/* Core Path - High Contrast (Thin) */}
+      {/* Core Path - Thicker, Highly Visible High Contrast Vector */}
       <path
         d={edgePath}
         fill="none"
-        stroke={isExecuting ? "#00E5FF" : isAmbient ? "#5DA9FF" : "rgba(255,255,255,0.1)"}
-        strokeWidth={isExecuting ? 1.5 : 0.8}
+        stroke={isExecuting ? "#FFFFFF" : "#00E5FF"}
+        strokeWidth={isExecuting ? 2.5 : 2.0}
         strokeLinecap="round"
         markerEnd={markerEnd}
         style={{ 
           ...style, 
-          transition: 'all 0.5s ease', 
-          strokeOpacity: isExecuting ? 1 : 0.4, 
-          filter: isExecuting ? 'drop-shadow(0 0 4px #00E5FF)' : 'none',
+          transition: 'all 0.3s ease', 
+          strokeOpacity: isExecuting ? 1.0 : 0.85, 
+          filter: isExecuting ? 'drop-shadow(0 0 6px #00E5FF)' : 'drop-shadow(0 0 2px rgba(0,229,255,0.4))',
           zIndex: 100
         }}
       />
@@ -92,29 +92,29 @@ export const NeuralEdge = ({
         d={edgePath}
         fill="none"
         stroke="#00E5FF"
-        strokeWidth={isExecuting ? 2 : 1}
+        strokeWidth={isExecuting ? 3.0 : 1.5}
         strokeLinecap="round"
-        initial={{ opacity: 0.3 }}
-        animate={{ opacity: isExecuting ? [0.4, 1, 0.4] : isAmbient ? [0.1, 0.3, 0.1] : 0 }}
-        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+        initial={{ opacity: 0.5 }}
+        animate={{ opacity: isExecuting ? [0.6, 1.0, 0.6] : [0.3, 0.7, 0.3] }}
+        transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
         style={{ filter: 'blur(0.5px)' }}
       />
 
-      {/* Animated Particle Path */}
+      {/* Animated Flow Particles (Always running to convey live mesh status, speeds up when executing) */}
       <motion.path
         d={edgePath}
         fill="none"
-        stroke={isExecuting ? "#FFFFFF" : "#00E5FF"}
-        strokeWidth={isExecuting ? 2 : 0.8}
-        strokeDasharray="4, 60"
+        stroke={isExecuting ? "#FFFFFF" : "#5DA9FF"}
+        strokeWidth={isExecuting ? 3.0 : 1.5}
+        strokeDasharray="8, 45"
         strokeDashoffset="0"
         initial={{ strokeDashoffset: 100, opacity: 0 }}
         animate={{ 
-          strokeDashoffset: [0, -300], 
-          opacity: isExecuting ? 1 : isAmbient ? 0.4 : 0,
+          strokeDashoffset: [0, -250], 
+          opacity: 0.95,
         }}
         transition={{ 
-          duration: isExecuting ? 1 : 3, 
+          duration: isExecuting ? 0.8 : 2.2, 
           repeat: Infinity, 
           ease: "linear" 
         }}

@@ -19,6 +19,8 @@ export type Workspace = {
   nodes: Node[];
   edges: Edge[];
   lastUpdated: string;
+  isFavorite?: boolean;
+  description?: string;
 };
 
 export type RuntimeJob = {
@@ -118,6 +120,10 @@ export type WorkflowState = {
   toggleExecutionMode: () => void;
   viewMode: 'canvas' | 'dashboard' | 'neural' | 'governance' | 'cosmos' | 'advisor' | 'info' | 'privacy' | 'about' | 'guide' | 'mission';
   setViewMode: (mode: 'canvas' | 'dashboard' | 'neural' | 'governance' | 'cosmos' | 'advisor' | 'info' | 'privacy' | 'about' | 'guide' | 'mission') => void;
+  isSplitLayout: boolean;
+  toggleSplitLayout: () => void;
+  splitRightView: 'dashboard' | 'neural' | 'cosmos' | 'advisor' | 'governance' | 'mission';
+  setSplitRightView: (view: 'dashboard' | 'neural' | 'cosmos' | 'advisor' | 'governance' | 'mission') => void;
   deselectNodes: () => void;
   setNodesHidden: (nodeIds: string[], hidden: boolean) => void;
   deleteNode: (nodeId: string) => void;
@@ -129,6 +135,12 @@ export type WorkflowState = {
   switchWorkspace: (workspaceId: string) => void;
   addWorkspace: (name: string) => void;
   deleteWorkspace: (id: string) => void;
+  updateWorkspaceName: (id: string, name: string) => void;
+  toggleFavoriteWorkspace: (id: string) => void;
+  duplicateWorkspace: (id: string) => void;
+  // PWA Install Prompt State
+  deferredPrompt: any;
+  setDeferredPrompt: (prompt: any) => void;
   // Runtime tracking
   runtimeJobs: RuntimeJob[];
   addRuntimeJob: (job: Omit<RuntimeJob, 'id' | 'timestamp'>) => void;
@@ -374,6 +386,10 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
   toggleSidebar: () => set((state) => ({ isSidebarOpen: !state.isSidebarOpen })),
   viewMode: 'canvas',
   setViewMode: (viewMode) => set({ viewMode }),
+  isSplitLayout: false,
+  toggleSplitLayout: () => set((state) => ({ isSplitLayout: !state.isSplitLayout })),
+  splitRightView: 'dashboard',
+  setSplitRightView: (splitRightView) => set({ splitRightView }),
   healthHistory: Array.from({ length: 24 }).map((_, i) => ({
     time: `${i}:00`,
     value: 70 + Math.random() * 20,
@@ -508,6 +524,7 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
       w.id === get().currentWorkspaceId ? { ...w, nodes: updatedNodes } : w
     );
     set({ workspaces });
+    get().saveWorkflow();
   },
 
   onEdgesChange: (changes: EdgeChange[]) => {
@@ -517,6 +534,7 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
       w.id === get().currentWorkspaceId ? { ...w, edges: updatedEdges } : w
     );
     set({ workspaces });
+    get().saveWorkflow();
   },
 
   onConnect: (connection: Connection) => {
@@ -530,6 +548,7 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
       w.id === get().currentWorkspaceId ? { ...w, edges: updatedEdges } : w
     );
     set({ workspaces });
+    get().saveWorkflow();
   },
 
   addNode: (node: Node) => {
@@ -811,6 +830,40 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
     }
     get().saveWorkflow();
   },
+
+  updateWorkspaceName: (id: string, name: string) => {
+    const workspaces = get().workspaces.map(w => 
+      w.id === id ? { ...w, name, lastUpdated: new Date().toISOString() } : w
+    );
+    set({ workspaces });
+    get().saveWorkflow();
+  },
+
+  toggleFavoriteWorkspace: (id: string) => {
+    const workspaces = get().workspaces.map(w => 
+      w.id === id ? { ...w, isFavorite: !w.isFavorite, lastUpdated: new Date().toISOString() } : w
+    );
+    set({ workspaces });
+    get().saveWorkflow();
+  },
+
+  duplicateWorkspace: (id: string) => {
+    const target = get().workspaces.find(w => w.id === id);
+    if (!target) return;
+    const newWs: Workspace = {
+      id: `ws-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      name: `${target.name} (Copy)`,
+      nodes: JSON.parse(JSON.stringify(target.nodes)),
+      edges: JSON.parse(JSON.stringify(target.edges)),
+      isFavorite: target.isFavorite,
+      lastUpdated: new Date().toISOString()
+    };
+    set({ workspaces: [...get().workspaces, newWs] });
+    get().saveWorkflow();
+  },
+
+  deferredPrompt: null,
+  setDeferredPrompt: (prompt: any) => set({ deferredPrompt: prompt }),
 
   addRuntimeJob: (job) => {
     const newJob: RuntimeJob = {

@@ -30,29 +30,37 @@ export const CognitiveCosmos = () => {
         name: ws.name,
         x: Math.cos(angle) * radius,
         y: Math.sin(angle) * radius,
-        intensity: Math.random() * 0.5 + 0.5,
+        intensity: Math.sin(i * 100) * 0.25 + 0.75,
         neurons: ws.nodes.length
       };
     });
   }, [workspaces]);
+
+  const stars = useMemo(() => {
+    return Array.from({ length: 30 }).map((_, i) => ({
+      left: `${(Math.sin(i * 456.789) * 0.5 + 0.5) * 100}%`,
+      top: `${(Math.cos(i * 987.654) * 0.5 + 0.5) * 100}%`,
+      duration: (i % 4) + 3
+    }));
+  }, []);
 
   return (
     <div className="flex-1 overflow-hidden relative bg-black flex flex-col">
       {/* Cosmic Background */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,#7000ff10_0%,transparent_70%)]" />
       <div className="absolute inset-0 overflow-hidden opacity-20">
-         {[...Array(50)].map((_, i) => (
+         {stars.map((star, i) => (
             <motion.div 
                key={`star-${i}`}
                animate={{ 
                  opacity: [0.1, 0.4, 0.1],
                  scale: [1, 1.2, 1]
                }}
-               transition={{ duration: Math.random() * 5 + 2, repeat: Infinity }}
-               className="absolute w-0.5 h-0.5 bg-white rounded-full"
+               transition={{ duration: star.duration, repeat: Infinity }}
+               className="absolute w-0.5 h-0.5 bg-white rounded-full animate-pulse"
                style={{ 
-                  left: `${Math.random() * 100}%`, 
-                  top: `${Math.random() * 100}%` 
+                  left: star.left, 
+                  top: star.top 
                }}
             />
          ))}

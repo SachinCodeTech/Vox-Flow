@@ -597,7 +597,7 @@ export const FlowCanvas = () => {
           className="!bg-vox-panel/60 !border-vox-border !fill-white !shadow-none [&_button]:!bg-transparent [&_button]:!border-vox-border hover:[&_button]:!bg-vox-primary/10 !m-6 !rounded-xl overflow-hidden" 
         />
         
-        <Panel position="top-right" className="flex gap-3 m-4 flex-wrap justify-end items-center">
+        <Panel position="top-right" className="flex gap-1.5 md:gap-3 m-2 md:m-4 flex-wrap justify-end items-center max-w-[95vw] sm:max-w-none select-none">
           <div className="flex flex-col items-end justify-center px-4 hidden xl:flex">
             <div className="flex items-center gap-2">
                <div className="w-1.5 h-1.5 rounded-full bg-vox-primary animate-pulse" />
@@ -605,55 +605,58 @@ export const FlowCanvas = () => {
             </div>
             <span className="text-lg font-black text-white italic tracking-tighter font-display uppercase">{activeWs?.name || 'CENTRAL_NODE_01'}</span>
           </div>
-          <div className="h-10 w-px bg-white/5 mx-3" />
+          <div className="hidden sm:block h-10 w-px bg-white/5 mx-1.5 md:mx-3" />
           
           {/* Execution Mode Toggle */}
-          <div className="flex bg-white/5 border border-white/10 rounded-full overflow-hidden">
+          <div className="flex bg-white/5 border border-white/10 rounded-full overflow-hidden shrink-0">
              <button 
               onClick={undo}
-              className="p-3 border-r border-white/5 hover:bg-white/5 text-white/30 hover:text-white transition-all active:scale-95"
+              className="p-2.5 md:p-3 border-r border-white/5 hover:bg-white/5 text-white/30 hover:text-white transition-all active:scale-95"
               title="Undo Sequence"
              >
                 <Undo2 size={14} />
              </button>
              <button 
               onClick={redo}
-              className="p-3 hover:bg-white/5 text-white/30 hover:text-white transition-all active:scale-95"
+              className="p-2.5 md:p-3 hover:bg-white/5 text-white/30 hover:text-white transition-all active:scale-95"
               title="Redo Sequence"
              >
                 <Redo2 size={14} />
              </button>
           </div>
 
-          <div className="h-10 w-px bg-white/5 mx-1" />
+          <div className="hidden sm:block h-10 w-px bg-white/5 mx-0.5" />
 
           <button 
             onClick={handleClusterSelected}
-            className="flex items-center gap-3 px-6 py-3 rounded-full bg-white/5 border border-white/10 text-[10px] font-black text-white/40 hover:text-vox-primary hover:border-vox-primary/30 transition-all uppercase tracking-widest"
+            className="flex items-center gap-1.5 md:gap-3 p-2.5 md:px-6 md:py-3 rounded-full bg-white/5 border border-white/10 text-[10px] font-black text-white/40 hover:text-vox-primary hover:border-vox-primary/30 transition-all uppercase tracking-widest whitespace-nowrap"
             title="Cluster Selected Nodes"
           >
             <Layers size={14} />
-            Cluster
+            <span className="hidden sm:inline">Cluster</span>
           </button>
 
           <button 
             onClick={toggleExecutionMode}
             className={cn(
-              "flex items-center gap-3 px-6 py-3 rounded-full text-[10px] font-black transition-all uppercase tracking-widest border",
+              "flex items-center gap-1.5 md:gap-3 p-2.5 md:px-6 md:py-3 rounded-full text-[10px] font-black transition-all uppercase tracking-widest border whitespace-nowrap",
               isExecutionMode 
                 ? "bg-vox-primary/10 border-vox-primary text-vox-primary shadow-[0_0_20px_rgba(0,229,255,0.2)]" 
                 : "bg-white/5 border-white/10 text-white/40 hover:text-white/60"
             )}
+            title={isExecutionMode ? 'Execution Mode: Active' : 'Draft Mode'}
           >
             <Radio size={14} className={isExecutionMode ? "animate-pulse" : ""} />
-            {isExecutionMode ? 'Execution Mode: ON' : 'Draft Mode'}
+            <span className="hidden sm:inline">{isExecutionMode ? 'Execution: ON' : 'Draft Mode'}</span>
           </button>
 
           <button 
             onClick={handleSave}
-            className="flex items-center gap-3 px-6 py-3 rounded-full bg-white/5 border border-vox-border text-[10px] font-black text-white/60 hover:text-white hover:bg-white/10 transition-all uppercase tracking-widest"
+            title="Save Snapshot"
+            className="flex items-center gap-1.5 md:gap-3 p-2.5 md:px-6 md:py-3 rounded-full bg-white/5 border border-vox-border text-[10px] font-black text-white/60 hover:text-white hover:bg-white/10 transition-all uppercase tracking-widest whitespace-nowrap"
           >
-            <Save size={14} /> Snapshot
+            <Save size={14} />
+            <span className="hidden sm:inline">Snapshot</span>
           </button>
           <button 
             onClick={() => {
@@ -665,15 +668,18 @@ export const FlowCanvas = () => {
                 }, 3000);
               }
             }}
-            className="flex items-center gap-3 px-6 py-3 rounded-full bg-vox-secondary/10 border border-vox-secondary/30 text-[10px] font-black text-vox-secondary hover:bg-vox-secondary hover:text-white transition-all uppercase tracking-widest group"
+            title="Build Neural Mesh"
+            className="flex items-center gap-1.5 md:gap-3 p-2.5 md:px-6 md:py-3 rounded-full bg-vox-secondary/10 border border-vox-secondary/30 text-[10px] font-black text-vox-secondary hover:bg-vox-secondary hover:text-white transition-all uppercase tracking-widest group whitespace-nowrap"
           >
-            <Cpu size={14} className="group-hover:rotate-90 transition-transform" /> Build_Mesh
+            <Cpu size={14} className="group-hover:rotate-90 transition-transform" />
+            <span className="hidden sm:inline">Build_Mesh</span>
           </button>
+          
           <button 
             onClick={handleExecute}
             disabled={isExecuting}
             className={cn(
-              "flex items-center gap-3 px-8 py-3 rounded-full text-[10px] font-black transition-all shadow-[0_0_40px_rgba(0,229,255,0.2)] uppercase tracking-widest",
+              "flex items-center gap-1.5 md:gap-3 px-4.5 py-2.5 md:px-8 md:py-3 rounded-full text-[10px] font-black transition-all shadow-[0_0_40px_rgba(0,229,255,0.2)] uppercase tracking-widest whitespace-nowrap",
               isExecuting 
                 ? "bg-white/5 text-white/20 cursor-not-allowed border-vox-border" 
                 : "bg-vox-primary text-vox-bg hover:scale-105 active:scale-95"
@@ -684,7 +690,12 @@ export const FlowCanvas = () => {
             ) : (
               <Play size={14} fill="currentColor" />
             )}
-            {isExecuting ? 'Synthesizing...' : 'Execute Sequence'}
+            <span>
+              {isExecuting 
+                ? '...' 
+                : <><span className="hidden sm:inline">Execute Sequence</span><span className="sm:hidden">Run</span></>
+              }
+            </span>
           </button>
         </Panel>
 

@@ -21,7 +21,6 @@ import { doc, getDoc } from 'firebase/firestore';
 import { cn } from './lib/utils';
 import { CommandBar } from './components/CommandBar';
 import { Header } from './components/Header';
-import { BootScreen } from './components/BootScreen';
 import { SystemInfoPage } from './components/SystemInfoPage';
 import { PrivacyPolicy } from './components/PrivacyPolicy';
 import { AboutPage } from './components/AboutPage';
@@ -35,7 +34,6 @@ import { NotificationSystem } from './components/NotificationSystem';
 import { SystemDock } from './components/SystemDock';
 
 export default function App() {
-  const [isBooting, setIsBooting] = useState(true);
   const [showStartScreen, setShowStartScreen] = useState(true);
   const [isFocusMode, setIsFocusMode] = useState(false);
   const { 
@@ -50,14 +48,31 @@ export default function App() {
     isSidebarOpen,
     toggleSidebar,
     currentUser,
-    setCurrentUser
+    setCurrentUser,
+    isSplitLayout,
+    toggleSplitLayout,
+    splitRightView,
+    setSplitRightView,
+    executeSequence,
+    setDeferredPrompt
   } = useWorkflowStore();
-  
-  useEffect(() => {
-    const timer = setTimeout(() => setIsBooting(false), 5000);
-    return () => clearTimeout(timer);
-  }, []);
 
+  useEffect(() => {
+    // Synchronize global PWA install event if fired early or during runtime
+    if ((window as any).__deferredInstallPrompt) {
+      setDeferredPrompt((window as any).__deferredInstallPrompt);
+    }
+
+    const handlePromptAvailable = () => {
+      if ((window as any).__deferredInstallPrompt) {
+        setDeferredPrompt((window as any).__deferredInstallPrompt);
+      }
+    };
+
+    window.addEventListener('pwa-install-prompt-available', handlePromptAvailable);
+    return () => window.removeEventListener('pwa-install-prompt-available', handlePromptAvailable);
+  }, [setDeferredPrompt]);
+  
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
@@ -113,10 +128,20 @@ export default function App() {
         e.preventDefault();
         toggleSidebar();
       }
+      // Ctrl + \ : Toggle Split Layout Mode
+      if ((e.ctrlKey || e.metaKey) && e.key === '\\') {
+        e.preventDefault();
+        toggleSplitLayout();
+      }
+      // Ctrl + Enter : Pulse Execution Sequence
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        executeSequence();
+      }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [toggleSidebar, toggleSplitLayout, executeSequence]);
 
   useEffect(() => {
     const hasSeenStart = localStorage.getItem('voxflow_initialized');
@@ -132,13 +157,11 @@ export default function App() {
 
   return (
     <div className="flex h-svh w-screen bg-vox-bg text-white font-sans selection:bg-vox-primary/30 selection:text-vox-primary overflow-hidden">
-      <AnimatePresence>
-        {isBooting && <BootScreen />}
-      </AnimatePresence>
       <CommandPalette />
       <StatusBar />
       <NotificationSystem />
       <SystemDock />
+      <CommandBar />
       <AnimatePresence>
         {!currentUser && <LoginScreen />}
       </AnimatePresence>
@@ -191,43 +214,117 @@ export default function App() {
             <div className="absolute inset-0 bg-[linear-gradient(rgba(0,229,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(0,229,255,0.03)_1px,transparent_1px)] bg-[size:40px_40px] pointer-events-none" />
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_40%,rgba(93,169,255,0.05)_0%,transparent_70%)] pointer-events-none" />
             
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={viewMode}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="w-full h-full"
-              >
-                {viewMode === 'canvas' ? (
-                  <ReactFlowProvider>
-                    <FlowCanvas />
-                  </ReactFlowProvider>
-                ) : viewMode === 'dashboard' ? (
-                  <Dashboard />
-                ) : viewMode === 'neural' ? (
-                  <DigitalTwin />
-                ) : viewMode === 'cosmos' ? (
-                  <CognitiveCosmos />
-                ) : viewMode === 'advisor' ? (
-                  <ExecutiveAdvisor />
-                ) : viewMode === 'governance' ? (
-                  <GovernanceHub />
-                ) : viewMode === 'mission' ? (
-                  <MissionControl />
-                ) : viewMode === 'info' ? (
-                  <SystemInfoPage onBack={() => setViewMode('canvas')} />
-                ) : viewMode === 'privacy' ? (
-                  <PrivacyPolicy onBack={() => setViewMode('canvas')} />
-                ) : viewMode === 'guide' ? (
-                  <UserGuide onBack={() => setViewMode('canvas')} />
-                ) : viewMode === 'about' ? (
-                  <AboutPage onBack={() => setViewMode('canvas')} />
-                ) : (
-                  <NotFound onBack={() => setViewMode('canvas')} />
-                )}
-              </motion.div>
-            </AnimatePresence>
+            {/* View Render Utility */}
+            {(() => {
+              const renderView = (mode: string) => {
+                switch (mode) {
+                  case 'canvas':
+                    return (
+                      <ReactFlowProvider>
+                        <FlowCanvas />
+                      </ReactFlowProvider>
+                    );
+                  case 'dashboard':
+                    return <Dashboard />;
+                  case 'neural':
+                    return <DigitalTwin />;
+                  case 'cosmos':
+                    return <CognitiveCosmos />;
+                  case 'advisor':
+                    return <ExecutiveAdvisor />;
+                  case 'governance':
+                    return <GovernanceHub />;
+                  case 'mission':
+                    return <MissionControl />;
+                  case 'info':
+                    return <SystemInfoPage onBack={() => setViewMode('canvas')} />;
+                  case 'privacy':
+                    return <PrivacyPolicy onBack={() => setViewMode('canvas')} />;
+                  case 'guide':
+                    return <UserGuide onBack={() => setViewMode('canvas')} />;
+                  case 'about':
+                    return <AboutPage onBack={() => setViewMode('canvas')} />;
+                  default:
+                    return <NotFound onBack={() => setViewMode('canvas')} />;
+                }
+              };
+
+              return (
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={viewMode + (isSplitLayout ? '-split' : '-single')}
+                    initial={{ opacity: 0, scale: 0.99 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.99 }}
+                    className="w-full h-full"
+                  >
+                    {isSplitLayout ? (
+                      <div className="w-full h-full flex flex-col lg:flex-row divide-y lg:divide-y-0 lg:divide-x divide-white/5 relative overflow-hidden bg-vox-bg">
+                        {/* Left Panel - Primary */}
+                        <div className="flex-1 h-full min-w-0 min-h-0 relative flex flex-col">
+                          <div className="h-7 px-4 bg-black/40 border-b border-white/5 flex items-center justify-between select-none z-10 shrink-0">
+                            <span className="text-[8px] font-black uppercase text-vox-primary tracking-widest flex items-center gap-1.5">
+                              <span className="w-1.5 h-1.5 bg-vox-primary rounded-full animate-ping" />
+                              PRIMARY WORKSPACE :: {viewMode.toUpperCase()}
+                            </span>
+                            <div className="flex items-center gap-1">
+                              {['canvas', 'dashboard', 'neural', 'governance'].map((m) => (
+                                <button
+                                  key={m}
+                                  onClick={() => setViewMode(m as any)}
+                                  className={cn(
+                                    "px-2 py-0.5 rounded text-[7px] font-black uppercase tracking-widest transition-all",
+                                    viewMode === m 
+                                      ? "bg-vox-primary/10 text-vox-primary border border-vox-primary/20" 
+                                      : "text-white/30 hover:text-white"
+                                  )}
+                                >
+                                  {m}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                          <div className="flex-1 min-h-0 min-w-0 relative">
+                            {renderView(viewMode)}
+                          </div>
+                        </div>
+
+                        {/* Right Panel - Secondary */}
+                        <div className="w-full lg:w-[45%] h-full shrink-0 flex flex-col border-l border-white/5 bg-vox-panel/10 min-h-0 min-w-0 overflow-hidden">
+                          <div className="h-7 px-4 bg-black/60 border-b border-white/5 flex items-center justify-between select-none z-10 shrink-0">
+                            <span className="text-[8px] font-black uppercase text-vox-secondary tracking-widest flex items-center gap-1.5">
+                              <span className="w-1.5 h-1.5 bg-vox-secondary rounded-full animate-pulse" />
+                              COLATERAL MONITOR :: {splitRightView.toUpperCase()}
+                            </span>
+                            <div className="flex items-center gap-1">
+                              {['dashboard', 'neural', 'governance', 'advisor', 'cosmos'].map((m) => (
+                                <button
+                                  key={m}
+                                  onClick={() => setSplitRightView(m as any)}
+                                  className={cn(
+                                    "px-2 py-0.5 rounded text-[7px] font-black uppercase tracking-widest transition-all",
+                                    splitRightView === m 
+                                      ? "bg-vox-secondary/15 text-vox-secondary border border-vox-secondary/20" 
+                                      : "text-white/30 hover:text-white"
+                                  )}
+                                >
+                                  {m}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                          <div className="flex-1 min-h-0 min-w-0 relative overflow-y-auto custom-scrollbar">
+                            {renderView(splitRightView)}
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      renderView(viewMode)
+                    )}
+                  </motion.div>
+                </AnimatePresence>
+              );
+            })()}
           </div>
         </div>
 

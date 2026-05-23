@@ -20,8 +20,8 @@ export const CommandBar = () => {
         setLastGenResult(null);
       }
     };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    const handleToggle = (e: any) => { setIsOpen(e.detail?.open ?? true); setLastGenResult(null); }; window.addEventListener('keydown', handleKeyDown); window.addEventListener('toggle-ai-architect', handleToggle);
+    return () => { window.removeEventListener('keydown', handleKeyDown); window.removeEventListener('toggle-ai-architect', handleToggle); };
   }, []);
 
   const handleGenerate = async () => {

@@ -1,6 +1,6 @@
 {
-  "name": "VoxFlow Sentient OS",
-  "description": "VoxFlow Sentient OS is a next-generation decentralized desktop ecosystem for autonomous institutional synthesis. It features a neural-mesh execution engine, sentient memory vaults, and multi-agent cognitive orchestration.",
+  "name": "Vox Flow OS",
+  "description": "Vox Flow OS is a next-generation decentralized desktop ecosystem for autonomous institutional synthesis. It features a neural-mesh execution engine, sentient memory vaults, and multi-agent cognitive orchestration.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API", "Institutional Consciousness", "Adaptive Governance", "Strategic Cognition Mesh", "Autonomous Evolution Engine"]
 }

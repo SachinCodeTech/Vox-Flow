@@ -51,6 +51,13 @@ const resizeObserverErrorHandler = (e: any) => {
 window.addEventListener('error', resizeObserverErrorHandler, true);
 window.addEventListener('unhandledrejection', resizeObserverErrorHandler, true);
 
+// Capture PWA installation and dispatch custom event
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  (window as any).__deferredInstallPrompt = e;
+  window.dispatchEvent(new CustomEvent('pwa-install-prompt-available'));
+});
+
 // Shim ResizeObserver to prevent common "loop limit" errors by deferring to rAF
 if (typeof window !== 'undefined' && window.ResizeObserver) {
   const OriginalResizeObserver = window.ResizeObserver;

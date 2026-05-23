@@ -26,7 +26,10 @@ import {
   Braces,
   ChevronLeft,
   ChevronRight,
-  Trash2
+  Trash2,
+  Sparkles,
+  Copy,
+  Star
 } from 'lucide-react';
 import { useWorkflowStore } from '../store/useWorkflowStore';
 import { cn } from '../lib/utils';
@@ -181,6 +184,8 @@ const iconSidebarMap = {
 
 export const Sidebar = ({ isCollapsed, onToggle }: { isCollapsed: boolean, onToggle: () => void }) => {
   const [search, setSearch] = useState('');
+  const [vaultSearch, setVaultSearch] = useState('');
+  const [onlyFavorites, setOnlyFavorites] = useState(false);
   
   const { 
     setNodes, 
@@ -194,7 +199,9 @@ export const Sidebar = ({ isCollapsed, onToggle }: { isCollapsed: boolean, onTog
     addWorkspace,
     addTemplate,
     agents,
-    updateAgent
+    updateAgent,
+    toggleFavoriteWorkspace,
+    duplicateWorkspace
   } = useWorkflowStore();
 
   const handleCreateTemplate = () => {
@@ -273,7 +280,7 @@ export const Sidebar = ({ isCollapsed, onToggle }: { isCollapsed: boolean, onTog
              { id: 'neural', icon: SearchCode, label: 'Map' },
              { id: 'mission', icon: Zap, label: 'Live' },
              { id: 'governance', icon: ShieldCheck, label: 'Gov' },
-             { id: 'advisor', icon: Users, label: 'Intel' }
+             { id: 'advisor', icon: Cpu, label: 'Intel AI' }
            ].map((nav) => (
              <button
                key={nav.id}
@@ -293,7 +300,7 @@ export const Sidebar = ({ isCollapsed, onToggle }: { isCollapsed: boolean, onTog
       )}
 
       {!isCollapsed && (
-        <div className="px-4 py-2 bg-vox-primary/5 border-b border-vox-primary/20 flex items-center justify-between">
+        <div className="px-4 pb-2 pt-1.5 bg-vox-primary/5 border-b border-vox-primary/20 flex flex-col gap-1.5"><button onClick={() => window.dispatchEvent(new CustomEvent('toggle-ai-architect', { detail: { open: true } }))} className="w-full py-2 rounded-xl border border-vox-secondary/30 bg-vox-secondary/10 hover:bg-vox-secondary/25 text-vox-secondary hover:text-white transition-all duration-350 flex items-center justify-center gap-2 group shadow-[0_0_15px_rgba(112,0,255,0.1)] hover:shadow-[0_0_20px_rgba(112,0,255,0.25)] hover:scale-[1.02] active:scale-[0.98] cursor-pointer" id="sidebar-ai-architect-btn"><Sparkles size={11} className="animate-pulse text-vox-secondary group-hover:text-white" /><span className="text-[8.5px] font-black uppercase tracking-[0.25em]">AI Architect Prompt</span></button>
            <div className="flex items-center gap-2 overflow-hidden">
               <Activity size={10} className="text-vox-primary shrink-0 animate-pulse" />
               <marquee className="text-[8px] font-black text-vox-primary/60 uppercase tracking-widest whitespace-nowrap italic pointer-events-none">
@@ -326,54 +333,133 @@ export const Sidebar = ({ isCollapsed, onToggle }: { isCollapsed: boolean, onTog
                 <h3 className="text-[9px] font-black text-vox-primary uppercase tracking-[0.3em]">Workflow Vault</h3>
                 <span className="text-[7px] font-black text-white/30 uppercase tracking-widest">Persistence Layer</span>
              </div>
-             <div className="space-y-2">
-                {workspaces.map(ws => (
-                  <div key={ws.id} className="group relative">
-                    <button 
-                      onClick={() => switchWorkspace(ws.id)}
-                      className={cn(
-                        "w-full p-3 flex items-center gap-3 rounded-xl border transition-all text-left overflow-hidden",
-                        currentWorkspaceId === ws.id 
-                          ? "bg-vox-primary/10 border-vox-primary/40 shadow-[0_0_15px_rgba(0,229,255,0.1)]" 
-                          : "bg-white/[0.02] border-white/5 hover:border-white/20 hover:bg-white/[0.04]"
-                      )}
-                    >
-                      <div className={cn(
-                        "w-8 h-8 rounded-lg flex items-center justify-center transition-all",
-                        currentWorkspaceId === ws.id ? "bg-vox-primary text-vox-bg" : "bg-white/10 text-white/60 group-hover:text-vox-primary"
-                      )}>
-                        <Database size={14} />
-                      </div>
-                      <div className="flex flex-col min-w-0 pr-8">
-                        <span className={cn(
-                          "text-[10px] font-black uppercase tracking-widest truncate",
-                          currentWorkspaceId === ws.id ? "text-white" : "text-white/80"
-                        )}>{ws.name}</span>
-                        <span className="text-[7px] font-black text-white/40 uppercase tracking-tighter italic">Last modified: {new Date(ws.lastUpdated).toLocaleDateString()}</span>
-                      </div>
-                    </button>
-                    {workspaces.length > 1 && (
+
+             {/* Vault search and filter bar */}
+             <div className="flex gap-1.5 px-0.5">
+               <div className="relative flex-1">
+                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-white/30" size={10} />
+                 <input 
+                   type="text" 
+                   value={vaultSearch}
+                   onChange={(e) => setVaultSearch(e.target.value)}
+                   placeholder="Search vault..."
+                   className="w-full bg-black/40 border border-vox-border/50 rounded-lg py-1.5 pl-7 pr-2 text-[9px] font-medium text-white focus:outline-none focus:border-vox-primary/40 transition-all placeholder:text-white/20 uppercase tracking-wider"
+                 />
+               </div>
+               <button 
+                 onClick={() => setOnlyFavorites(!onlyFavorites)}
+                 className={cn(
+                   "p-1.5 rounded-lg border transition-all flex items-center justify-center shrink-0",
+                   onlyFavorites 
+                     ? "bg-yellow-500/10 border-yellow-500/40 text-yellow-400" 
+                     : "bg-black/40 border-vox-border/50 text-white/40 hover:text-white"
+                 )}
+                 title={onlyFavorites ? "Show all" : "Show only favorites"}
+               >
+                 <Star size={10} className={onlyFavorites ? "fill-yellow-400" : ""} />
+               </button>
+             </div>
+
+             <div className="space-y-1.5 max-h-[220px] overflow-y-auto custom-scrollbar">
+                {workspaces.filter(ws => {
+                  const matchesSearch = ws.name.toLowerCase().includes(vaultSearch.toLowerCase());
+                  const matchesFavorite = !onlyFavorites || !ws || !!ws.isFavorite;
+                  return matchesSearch && matchesFavorite;
+                }).map(ws => {
+                  const isCurrent = currentWorkspaceId === ws.id;
+                  return (
+                    <div key={ws.id} className="group relative">
                       <button 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (confirm('Decommission this neural repository?')) {
-                            deleteWorkspace(ws.id);
-                          }
-                        }}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-lg bg-red-500/0 hover:bg-red-500/20 text-white/0 group-hover:text-red-400 transition-all border border-transparent hover:border-red-500/50"
+                        onClick={() => switchWorkspace(ws.id)}
+                        className={cn(
+                          "w-full p-2 flex items-center gap-2 rounded-xl border transition-all text-left overflow-hidden pr-20",
+                          isCurrent 
+                            ? "bg-vox-primary/10 border-vox-primary/30 shadow-[0_0_10px_rgba(0,229,255,0.05)]" 
+                            : "bg-white/[0.01] border-white/5 hover:border-white/15 hover:bg-white/[0.03]"
+                        )}
                       >
-                        <Trash2 size={12} />
+                        <div className={cn(
+                          "w-6 h-6 rounded flex items-center justify-center transition-all shrink-0",
+                          isCurrent ? "bg-vox-primary text-vox-bg" : "bg-white/10 text-white/60 group-hover:text-vox-primary"
+                        )}>
+                          <Database size={10} />
+                        </div>
+                        <div className="flex flex-col min-w-0">
+                          <span className={cn(
+                            "text-[9px] font-black uppercase tracking-widest truncate",
+                            isCurrent ? "text-white" : "text-white/80"
+                          )}>{ws.name}</span>
+                          <span className="text-[6.5px] font-black text-white/30 uppercase tracking-tighter italic">Modified: {new Date(ws.lastUpdated).toLocaleDateString()}</span>
+                        </div>
                       </button>
-                    )}
+
+                      {/* Floating actions container */}
+                      <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity z-10 bg-black/95 p-0.5 rounded border border-white/5 shadow-md">
+                        {/* Favorite button */}
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleFavoriteWorkspace(ws.id);
+                          }}
+                          className={cn(
+                            "p-1 rounded transition-all",
+                            ws.isFavorite 
+                              ? "text-yellow-400" 
+                              : "text-white/40 hover:text-yellow-400"
+                          )}
+                          title={ws.isFavorite ? "Unfavorite" : "Favorite"}
+                        >
+                          <Star size={9} className={ws.isFavorite ? "fill-yellow-400" : ""} />
+                        </button>
+
+                        {/* Duplicate button */}
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            duplicateWorkspace(ws.id);
+                          }}
+                          className="p-1 rounded text-white/40 hover:text-vox-primary transition-all"
+                          title="Duplicate"
+                        >
+                          <Copy size={9} />
+                        </button>
+
+                        {/* Delete button */}
+                        {workspaces.length > 1 && (
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (confirm(`Decommission "${ws.name}"?`)) {
+                                deleteWorkspace(ws.id);
+                              }
+                            }}
+                            className="p-1 rounded text-white/40 hover:text-red-400 transition-all"
+                            title="Decommission"
+                          >
+                            <Trash2 size={9} />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {workspaces.filter(ws => {
+                  const matchesSearch = ws.name.toLowerCase().includes(vaultSearch.toLowerCase());
+                  const matchesFavorite = !onlyFavorites || !ws || !!ws.isFavorite;
+                  return matchesSearch && matchesFavorite;
+                }).length === 0 && (
+                  <div className="text-center py-4 border border-dashed border-white/5 rounded-xl bg-black/10">
+                    <span className="text-[8px] font-bold text-white/30 uppercase tracking-widest">No workflows found</span>
                   </div>
-                ))}
+                )}
              </div>
              <button 
               onClick={() => {
                 const name = prompt('Enter Workflow Name:');
                 if (name) addWorkspace(name);
               }}
-              className="w-full py-2.5 rounded-xl border border-dashed border-white/10 hover:border-vox-primary/40 hover:bg-vox-primary/5 text-[9px] font-black text-white/30 hover:text-vox-primary transition-all uppercase tracking-[0.2em]"
+              className="w-full py-2 rounded-xl border border-dashed border-white/10 hover:border-vox-primary/40 hover:bg-vox-primary/5 text-[9px] font-black text-white/30 hover:text-vox-primary transition-all uppercase tracking-[0.2em]"
              >
                 + Initialize New Workflow
              </button>

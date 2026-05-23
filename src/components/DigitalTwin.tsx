@@ -32,6 +32,38 @@ export const DigitalTwin = () => {
     });
   }, [workspaces]);
 
+  // Pre-calculate stable animation heights for bottom bars to eliminate layout overhead and lag
+  const pulseHeights = useMemo(() => {
+    return Array.from({ length: 24 }).map((_, i) => ({
+      h1: 8 + (Math.sin(i * 1.5) + 1) * 6,
+      h2: 12 + (Math.cos(i * 2.2) + 1) * 10
+    }));
+  }, []);
+
+  // Pre-calculate stable event trajectories using simple deterministic string hash to prevent Jitter & CPU reload
+  const stableEvents = useMemo(() => {
+    return events.slice(0, 3).map((ev) => {
+      let hashX = 0;
+      let hashY = 0;
+      const str = ev.id || "";
+      for (let j = 0; j < str.length; j++) {
+        const char = str.charCodeAt(j);
+        if (j % 2 === 0) {
+          hashX = (hashX << 5) - hashX + char;
+        } else {
+          hashY = (hashY << 5) - hashY + char;
+        }
+      }
+      const targetX = (Math.abs(hashX) % 500) - 250;
+      const targetY = (Math.abs(hashY) % 500) - 250;
+      return {
+        ...ev,
+        targetX,
+        targetY
+      };
+    });
+  }, [events]);
+
   return (
     <div className="flex-1 overflow-hidden relative bg-[#010101] flex flex-col">
       {/* Background Ambience */}
@@ -69,11 +101,11 @@ export const DigitalTwin = () => {
          <div className="w-64 space-y-4">
             <span className="text-[9px] font-black text-white/20 uppercase tracking-[0.4em]">Agent Coordination Pulse</span>
             <div className="flex items-end gap-1 h-8">
-               {[...Array(24)].map((_, i) => (
+               {pulseHeights.map((bar, i) => (
                  <motion.div 
                    key={i}
-                   animate={{ height: [10, Math.random() * 32 + 5, 10] }}
-                   transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.1 }}
+                   animate={{ height: [10, bar.h2, 10] }}
+                   transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.05 }}
                    className="w-1 bg-vox-secondary/40 rounded-full"
                  />
                ))}
@@ -202,15 +234,15 @@ export const DigitalTwin = () => {
 
             {/* Data Stream Simulation */}
             <AnimatePresence>
-               {events.slice(0, 3).map((ev, i) => (
+               {stableEvents.map((ev) => (
                   <motion.div 
                     key={`stream-${ev.id}`}
                     initial={{ opacity: 0, scale: 0 }}
                     animate={{ 
                        opacity: [0, 1, 1, 0],
                        scale: [0.5, 1, 1, 0.5],
-                       x: [0, Math.random() * 800 - 400],
-                       y: [0, Math.random() * 800 - 400]
+                       x: [0, ev.targetX],
+                       y: [0, ev.targetY]
                     }}
                     transition={{ duration: 4 }}
                     className="absolute z-10 pointer-events-none"

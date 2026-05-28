@@ -33,6 +33,7 @@ import {
 } from 'lucide-react';
 import { useWorkflowStore } from '../store/useWorkflowStore';
 import { cn } from '../lib/utils';
+import { getNodeDocumentation } from '../lib/docs';
 
 const nodeIdList = [
   { group: 'Triggers', items: [
@@ -201,7 +202,9 @@ export const Sidebar = ({ isCollapsed, onToggle }: { isCollapsed: boolean, onTog
     agents,
     updateAgent,
     toggleFavoriteWorkspace,
-    duplicateWorkspace
+    duplicateWorkspace,
+    searchQuery,
+    setSearchQuery
   } = useWorkflowStore();
 
   const handleCreateTemplate = () => {
@@ -243,7 +246,11 @@ export const Sidebar = ({ isCollapsed, onToggle }: { isCollapsed: boolean, onTog
     addNode({
       id,
       type: nodeData.type.toLowerCase(),
-      data: { label: nodeData.label, icon: nodeData.icon },
+      data: { 
+        label: nodeData.label, 
+        icon: nodeData.icon,
+        documentation: getNodeDocumentation(nodeData.label)
+      },
       position,
     });
   };
@@ -311,7 +318,7 @@ export const Sidebar = ({ isCollapsed, onToggle }: { isCollapsed: boolean, onTog
       )}
 
       {!isCollapsed && (
-        <div className="p-4 border-b border-vox-border bg-white/[0.02]">
+        <div className="p-4 border-b border-vox-border bg-white/[0.02] space-y-2.5">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" size={12} />
             <input 
@@ -320,6 +327,16 @@ export const Sidebar = ({ isCollapsed, onToggle }: { isCollapsed: boolean, onTog
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full bg-black/40 border border-vox-border rounded-lg py-2.5 pl-9 pr-4 text-[10px] text-white focus:outline-none focus:border-vox-primary/50 transition-all placeholder:text-white/30 uppercase font-black tracking-widest shadow-inner sm:text-xs"
+            />
+          </div>
+          <div className="relative">
+            <SearchCode className="absolute left-3 top-1/2 -translate-y-1/2 text-vox-primary/55" size={12} />
+            <input 
+              type="text" 
+              placeholder="Search canvas nodes..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-black/40 border border-vox-border/50 rounded-lg py-2.5 pl-9 pr-4 text-[10px] text-vox-primary focus:outline-none focus:border-vox-primary/50 transition-all placeholder:text-vox-primary/30 uppercase font-black tracking-widest shadow-inner sm:text-xs"
             />
           </div>
         </div>

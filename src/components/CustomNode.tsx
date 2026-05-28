@@ -29,11 +29,13 @@ import {
   Settings2,
   ZapOff,
   Link2,
-  History
+  History,
+  Info
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useWorkflowStore } from '../store/useWorkflowStore';
 import { motion, AnimatePresence } from 'motion/react';
+import { getNodeDocumentation } from '../lib/docs';
 
 const iconMap = {
   Upload: Upload,
@@ -66,6 +68,13 @@ export const CustomNode = memo(({ id, data, selected, type, xPos, yPos, dragging
   const Icon = iconMap[data.icon as keyof typeof iconMap] || (type === 'trigger' ? Activity : Zap);
   const isTrigger = type === 'trigger';
   const { isExecuting, isExecutionMode, updateNodeLabel, setIsExecuting, addRuntimeJob, setContextMenu, deleteNode } = useWorkflowStore();
+  
+  const nodeState = useWorkflowStore(state => state.nodes.find(n => n.id === id)) as any;
+  const filter = nodeState?.filter || data.filter;
+  const executionCount = nodeState?.data?.executionCount || data.executionCount || 0;
+  const lastExecutionTime = nodeState?.data?.lastExecutionTime || data.lastExecutionTime;
+  const docText = data.documentation || getNodeDocumentation(data.label);
+  
   const [isEditing, setIsEditing] = React.useState(false);
   const [label, setLabel] = React.useState(data.label);
   const [showNeuralMenu, setShowNeuralMenu] = React.useState(false);
@@ -81,11 +90,12 @@ export const CustomNode = memo(({ id, data, selected, type, xPos, yPos, dragging
   }, [dragging]);
 
   const status = data.status || 'success'; // success, failed, running
-  const lastRun = data.lastRun || 'Never';
+  const lastRun = lastExecutionTime || data.lastRun || 'Never';
 
   const handleRerun = (e: React.MouseEvent) => {
     e.stopPropagation();
     setIsExecuting(true);
+    useWorkflowStore.getState().updateNodeData(id, { status: 'running' });
     addRuntimeJob({
       workspaceId: 'manual',
       nodeId: id,
@@ -94,6 +104,7 @@ export const CustomNode = memo(({ id, data, selected, type, xPos, yPos, dragging
     
     setTimeout(() => {
       setIsExecuting(false);
+      useWorkflowStore.getState().updateNodeData(id, { status: 'success' });
       addRuntimeJob({
         workspaceId: 'manual',
         nodeId: id,
@@ -151,6 +162,7 @@ export const CustomNode = memo(({ id, data, selected, type, xPos, yPos, dragging
           dragging && "z-[200] shadow-[0_0_80px_rgba(0,229,255,0.3)]",
           data.status === 'running' && "border-vox-primary shadow-[0_0_40px_rgba(0,242,255,0.3)] animate-pulse",
           data.status === 'failed' && "border-red-500/50 shadow-[0_0_30px_rgba(239,68,68,0.3)] bg-red-500/5",
+          filter ? "opacity-25 grayscale brightness-75 scale-95 pointer-events-none" : "opacity-100",
           "group"
         )}
       >
@@ -349,11 +361,25 @@ export const CustomNode = memo(({ id, data, selected, type, xPos, yPos, dragging
           </div>
           <div className="flex-1 flex flex-col justify-center min-w-0">
             <div className="flex items-center justify-between gap-2 mb-0.5">
-              <span className="text-[8.5px] font-black uppercase tracking-[0.3em] text-vox-primary italic">
-                {type}_module
-              </span>
+              <div className="flex items-center gap-1.5 min-w-0 z-40">
+                <span className="text-[8.5px] font-black uppercase tracking-[0.3em] text-vox-primary italic truncate">
+                  {type}_module
+                </span>
+                
+                {/* Info Icon with hover tooltip */}
+                <div className="relative group/doc cursor-help shrink-0">
+                  <Info size={10} className="text-white/33 hover:text-vox-primary transition-colors" />
+                  <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 opacity-0 pointer-events-none group-hover/doc:opacity-100 group-hover/doc:pointer-events-auto transition-all duration-200 w-56 p-3 bg-[#0d0d0d]/95 backdrop-blur-xl border border-vox-primary/30 rounded-2xl text-[8.5px] text-white/80 normal-case tracking-normal shadow-[0_15px_40px_rgba(0,0,0,0.8)] z-[350] leading-relaxed">
+                    <div className="font-bold text-[9px] text-vox-primary uppercase tracking-widest mb-1.5 flex items-center gap-1.5 border-b border-white/5 pb-1">
+                      <Info size={10} />
+                      Component Guide
+                    </div>
+                    {docText}
+                  </div>
+                </div>
+              </div>
               <div className={cn(
-                "h-1 px-2 rounded-full transition-all",
+                "h-1 px-2 rounded-full transition-all shrink-0",
                 isExecuting ? "bg-vox-primary w-8 shadow-[0_0_8px_rgba(0,229,255,0.5)]" : "bg-white/10 w-4"
               )} />
             </div>
@@ -409,11 +435,17 @@ export const CustomNode = memo(({ id, data, selected, type, xPos, yPos, dragging
       />
       
       {/* HUD Info (Bottom Bar) */}
-      <div className="bg-black/45 border-t border-white/10 px-4 py-1.5 flex items-center justify-between">
-         <span className="text-[8px] font-black text-white/65 uppercase tracking-wider italic">
+      <div className="bg-black/45 border-t border-white/10 px-4 py-1.5 flex items-center justify-between gap-1.5">
+         <span className="text-[8px] font-black text-white/65 uppercase tracking-wider italic truncate flex-1">
             Status: {isExecuting ? 'Exec' : 'Standby'}
          </span>
-         <span className="text-[8px] font-black text-vox-primary/80 uppercase tracking-widest">
+         {executionCount > 0 && (
+           <span className="text-[7.5px] uppercase font-black bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-1.5 py-0.5 rounded flex items-center gap-1.5 leading-none shadow-[0_0_10px_rgba(16,185,129,0.1)] shrink-0">
+             <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+             Runs: {executionCount}
+           </span>
+         )}
+         <span className="text-[8px] font-black text-vox-primary/80 uppercase tracking-widest shrink-0">
             0X.42.FF
          </span>
       </div>

@@ -168,6 +168,16 @@ export type WorkflowState = {
   undo: () => void;
   redo: () => void;
   takeSnapshot: () => void;
+  // Execution history tracking and node alignments
+  workflowRunsHistory: {
+    id: string;
+    workspaceName: string;
+    status: 'success' | 'failed' | 'aborted' | 'running';
+    timestamp: string;
+    totalNodes: number;
+    duration: string;
+  }[];
+  alignNodes: (direction?: 'horizontal' | 'vertical') => void;
   addStrategicAdvice: (advice: Omit<StrategicAdvice, 'id'>) => void;
   recordMemory: (memory: Omit<MemoryPattern, 'id' | 'timestamp'>) => void;
   updateHealth: (health: Partial<OrganizationalHealth>) => void;
@@ -296,13 +306,39 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
     set(state => ({ customTemplates: [...state.customTemplates, newTemplate] }));
   },
   searchQuery: '',
-  setSearchQuery: (searchQuery) => set({ searchQuery }),
+  setSearchQuery: (query) => {
+    set({ searchQuery: query });
+    const { nodes } = get();
+    const updatedNodes = nodes.map(node => {
+      if (!query || query.trim() === '') {
+        return { ...node, filter: false, data: { ...node.data, filter: false } };
+      }
+      const label = node.data?.label || '';
+      const params = node.data?.parameters || node.data?.params || {};
+      const paramVals = Object.values(params).join(' ');
+      const match = label.toLowerCase().includes(query.toLowerCase()) || 
+                    paramVals.toLowerCase().includes(query.toLowerCase()) ||
+                    node.id.toLowerCase().includes(query.toLowerCase());
+      return {
+        ...node,
+        filter: !match,
+        data: { ...node.data, filter: !match }
+      };
+    });
+    set({ nodes: updatedNodes });
+    const workspaces = get().workspaces.map(w => 
+      w.id === get().currentWorkspaceId ? { ...w, nodes: updatedNodes } : w
+    );
+    set({ workspaces });
+  },
   
   systemLogs: [],
   addLog: (log) => set(state => ({ 
     systemLogs: [{ id: `log-${Date.now()}-${Math.random()}`, timestamp: new Date().toLocaleTimeString(), ...log }, ...state.systemLogs].slice(0, 100) 
   })),
   clearLogs: () => set({ systemLogs: [] }),
+
+  workflowRunsHistory: [],
 
   notifications: [],
   addNotification: (notif) => set(state => ({
@@ -474,6 +510,7 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
       past: [...past, { nodes: JSON.parse(JSON.stringify(nodes)), edges: JSON.parse(JSON.stringify(edges)) }].slice(-50),
       future: [] 
     });
+    get().saveWorkflow();
   },
 
   undo: () => {
@@ -494,6 +531,7 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
       w.id === get().currentWorkspaceId ? { ...w, nodes: previous.nodes, edges: previous.edges } : w
     );
     set({ workspaces });
+    get().saveWorkflow();
   },
 
   redo: () => {
@@ -514,6 +552,7 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
       w.id === get().currentWorkspaceId ? { ...w, nodes: next.nodes, edges: next.edges } : w
     );
     set({ workspaces });
+    get().saveWorkflow();
   },
   
   onNodesChange: (changes: NodeChange[]) => {
@@ -573,9 +612,28 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
 
   updateNodeData: (nodeId: string, data: any) => {
     get().takeSnapshot();
-    const updatedNodes = get().nodes.map(n => 
-      n.id === nodeId ? { ...n, data: { ...n.data, ...data } } : n
-    );
+    const updatedNodes = get().nodes.map(n => {
+      if (n.id === nodeId) {
+        let executionCount = n.data?.executionCount || 0;
+        let lastExecutionTime = n.data?.lastExecutionTime;
+        
+        if (data.status === 'success' && n.data?.status !== 'success') {
+          executionCount += 1;
+          lastExecutionTime = new Date().toLocaleTimeString();
+        }
+        
+        return { 
+          ...n, 
+          data: { 
+            ...n.data, 
+            ...data, 
+            executionCount, 
+            lastExecutionTime 
+          } 
+        };
+      }
+      return n;
+    });
     set({ nodes: updatedNodes });
     const workspaces = get().workspaces.map(w => 
       w.id === get().currentWorkspaceId ? { ...w, nodes: updatedNodes } : w
@@ -660,10 +718,72 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
   },
 
   executeSequence: async () => {
-    const { nodes, edges, setIsExecuting, updateNodeData, addRuntimeJob, updateAgent, addLog } = get();
-    set({ executionState: 'running', executionHistory: [], executionStep: 0 });
+    const { nodes, edges, setIsExecuting, updateNodeData, addRuntimeJob, updateAgent, addLog, addNotification } = get();
+
+    // 1. Validation Step
+    const invalidNodes: { label: string; paramName: string; id: string }[] = [];
+    nodes.forEach(node => {
+      const label = node.data.label;
+      const params = node.data.parameters || node.data.params || {};
+
+      if (label === 'AI Trigger') {
+        if (!params.condition || params.condition.trim() === '') {
+          invalidNodes.push({ label, paramName: 'Natural Language Condition', id: node.id });
+        }
+      } else if (label === 'Sub-Workflow') {
+        if (!params.templateId || params.templateId.trim() === '') {
+          invalidNodes.push({ label, paramName: 'Logic Template', id: node.id });
+        }
+      } else if (label === 'Figma Hook') {
+        if (!params.fileRef || params.fileRef.trim() === '') {
+          invalidNodes.push({ label, paramName: 'Figma File ID / URL', id: node.id });
+        }
+      } else if (label === 'VoxCadd Sync') {
+        if (!params.projectId || params.projectId.trim() === '') {
+          invalidNodes.push({ label, paramName: 'Project Space ID', id: node.id });
+        }
+      }
+    });
+
+    if (invalidNodes.length > 0) {
+      addNotification({
+        title: 'Validation Failed',
+        message: `Aborted. "${invalidNodes[0].label}" is missing parameter: ${invalidNodes[0].paramName}`,
+        type: 'error'
+      });
+      invalidNodes.forEach(item => {
+        addLog({
+          level: 'error',
+          message: `Validation Error: Node [${item.label}] is missing required parameter [${item.paramName}]`,
+          source: 'VALIDATOR'
+        });
+      });
+      return;
+    }
+
+    // 2. Start run history registry
+    const runId = `run-${Date.now()}`;
+    const startTimeNum = Date.now();
+    const currentWorkspaceName = get().workspaces.find(w => w.id === get().currentWorkspaceId)?.name || 'Unknown Workspace';
+
+    const initialRunRecord = {
+      id: runId,
+      workspaceName: currentWorkspaceName,
+      status: 'running' as const,
+      timestamp: new Date().toLocaleTimeString(),
+      totalNodes: nodes.length,
+      duration: '0s'
+    };
+
+    set(state => ({
+      workflowRunsHistory: [initialRunRecord, ...state.workflowRunsHistory].slice(0, 50),
+      executionState: 'running',
+      executionHistory: [],
+      executionStep: 0
+    }));
     setIsExecuting(true);
-    
+    get().saveWorkflow();
+
     addLog({ level: 'sentient', message: 'Initiating global neural logic pulse...', source: 'CORE_ORCHESTRATOR' });
     updateAgent('cad-001', { status: 'executing', lastAction: 'Overseeing logic pulse' });
     updateAgent('guard-001', { status: 'executing', lastAction: 'Monitoring security integrity' });
@@ -674,6 +794,7 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
 
     const queue = nodes.filter(n => n.type === 'trigger');
     const processed = new Set<string>();
+    let overallSuccess = true;
 
     while (queue.length > 0) {
       // Check pause state
@@ -681,7 +802,10 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
         await new Promise(r => setTimeout(r, 100));
       }
 
-      if (get().executionState === 'idle' && get().isExecuting) break; 
+      if (get().executionState === 'idle' && get().isExecuting) {
+        overallSuccess = false;
+        break; 
+      }
 
       const node = queue.shift()!;
       if (processed.has(node.id)) continue;
@@ -704,13 +828,14 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
       updateNodeData(node.id, { status: 'running' });
       addRuntimeJob({ workspaceId: get().currentWorkspaceId, nodeId: node.id, status: 'running' });
       
+      const params = node.data.parameters || node.data.params || {};
       if (node.data.label === 'AI Trigger') {
-        const condition = node.data.params?.condition || 'No condition defined';
+        const condition = params.condition || 'No condition defined';
         addLog({ level: 'sentient', message: `Evaluating AI Condition: "${condition}"`, source: 'GEMINI_ORACLE' });
         await new Promise(r => setTimeout(r, 1500)); // Mimic complex analysis
         addLog({ level: 'sentient', message: 'Condition matched. Activating downstream mesh.', source: 'GEMINI_ORACLE' });
       } else if (node.data.label === 'Figma Hook') {
-        const fileRef = node.data.params?.fileRef || 'UNKNOWN_REF';
+        const fileRef = params.fileRef || 'UNKNOWN_REF';
         addLog({ level: 'info', message: `Nexus established with Figma file [${fileRef}]`, source: 'FIGMA_BRIDGE' });
       } else if (node.data.label === 'VoxCadd Sync') {
         addLog({ level: 'info', message: 'Synchronizing geometric primitives with VoxCadd Runtime', source: 'VOXCADD_CORE' });
@@ -730,12 +855,18 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
           if (currentNode?.data.status === 'success' || currentNode?.data.status === 'failed') {
             resolved = true;
           }
-          if (get().executionState === 'idle') return; // Cancelled
+          if (get().executionState === 'idle') {
+            overallSuccess = false;
+            return; // Cancelled
+          }
         }
       } else {
         const success = Math.random() > 0.05; 
         const status = success ? 'success' : 'failed';
-        if (!success) addLog({ level: 'error', message: `Execution failed at node [${node.data.label}] - LOGIC_FAULT`, source: 'DIAGNOSTIC_SUB' });
+        if (!success) {
+          overallSuccess = false;
+          addLog({ level: 'error', message: `Execution failed at node [${node.data.label}] - LOGIC_FAULT`, source: 'DIAGNOSTIC_SUB' });
+        }
         updateNodeData(node.id, { status, lastRun: new Date().toLocaleTimeString() });
         addRuntimeJob({ workspaceId: get().currentWorkspaceId, nodeId: node.id, status });
       }
@@ -745,6 +876,8 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
         processed.add(node.id);
         const downstream = edges.filter(e => e.source === node.id).map(e => nodes.find(n => n.id === e.target)).filter(Boolean) as Node[];
         queue.push(...downstream);
+      } else if (finalNode?.data.status === 'failed') {
+        overallSuccess = false;
       }
 
       // If stepping, pause after each node
@@ -753,11 +886,37 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
       }
     }
 
-    addLog({ level: 'sentient', message: 'Neural logic pulse completed successfully.', source: 'CORE_ORCHESTRATOR' });
+    const durationSeconds = Math.round((Date.now() - startTimeNum) / 1000);
+    const finalRunStatus: 'success' | 'failed' | 'running' | 'aborted' = overallSuccess ? 'success' : 'failed';
+
+    addLog({ 
+      level: overallSuccess ? 'sentient' : 'error', 
+      message: overallSuccess ? 'Neural logic pulse completed successfully.' : 'Neural logic pulse execution halted/failed.', 
+      source: 'CORE_ORCHESTRATOR' 
+    });
+
     updateAgent('cad-001', { status: 'idle', lastAction: 'Pulse execution complete' });
     updateAgent('guard-001', { status: 'idle', lastAction: 'Mesh audit successful' });
-    set({ executionState: 'idle' });
+
+    set(state => {
+      const updatedHistory = state.workflowRunsHistory.map(run => {
+        if (run.id === runId) {
+          return {
+            ...run,
+            status: finalRunStatus,
+            duration: `${durationSeconds}s`
+          };
+        }
+        return run;
+      });
+      return {
+        workflowRunsHistory: updatedHistory,
+        executionState: 'idle'
+      };
+    });
+
     setIsExecuting(false);
+    get().saveWorkflow();
   },
 
   stepExecution: async () => {
@@ -936,10 +1095,13 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
   },
 
   saveWorkflow: () => {
-    const { workspaces, currentWorkspaceId } = get();
+    const { workspaces, currentWorkspaceId, past, future, workflowRunsHistory } = get();
     localStorage.setItem('voxflow-enterprise-data', JSON.stringify({ 
       workspaces, 
       currentWorkspaceId,
+      past,
+      future,
+      workflowRunsHistory,
       lastUpdated: new Date().toISOString() 
     }));
   },
@@ -948,7 +1110,7 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
     const saved = localStorage.getItem('voxflow-enterprise-data');
     if (saved) {
       try {
-        const { workspaces, currentWorkspaceId } = JSON.parse(saved);
+        const { workspaces, currentWorkspaceId, past, future, workflowRunsHistory } = JSON.parse(saved);
         if (!Array.isArray(workspaces) || workspaces.length === 0) return false;
         
         const current = workspaces.find((w: Workspace) => w && w.id === currentWorkspaceId) || workspaces[0];
@@ -958,7 +1120,10 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
           workspaces, 
           currentWorkspaceId: current.id,
           nodes: current.nodes || [],
-          edges: current.edges || []
+          edges: current.edges || [],
+          past: Array.isArray(past) ? past : [],
+          future: Array.isArray(future) ? future : [],
+          workflowRunsHistory: Array.isArray(workflowRunsHistory) ? workflowRunsHistory : []
         });
         return true;
       } catch (e) {
@@ -976,5 +1141,94 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
       w.id === get().currentWorkspaceId ? { ...w, nodes: resetNodes, edges: [] } : w
     );
     set({ workspaces });
+  },
+
+  alignNodes: (direction: 'horizontal' | 'vertical' = 'horizontal') => {
+    get().takeSnapshot();
+    const { nodes, edges } = get();
+    if (nodes.length === 0) return;
+
+    // Build topological sort graph
+    const adj: Record<string, string[]> = {};
+    const inDegree: Record<string, number> = {};
+
+    nodes.forEach(n => {
+      adj[n.id] = [];
+      inDegree[n.id] = 0;
+    });
+
+    edges.forEach(e => {
+      if (adj[e.source] && inDegree[e.target] !== undefined) {
+        adj[e.source].push(e.target);
+        inDegree[e.target] = (inDegree[e.target] || 0) + 1;
+      }
+    });
+
+    const queue: string[] = [];
+    nodes.forEach(n => {
+      if (inDegree[n.id] === 0) {
+        queue.push(n.id);
+      }
+    });
+
+    const orderedIds: string[] = [];
+    while (queue.length > 0) {
+      const u = queue.shift()!;
+      orderedIds.push(u);
+      (adj[u] || []).forEach(v => {
+        inDegree[v]--;
+        if (inDegree[v] === 0) {
+          queue.push(v);
+        }
+      });
+    }
+
+    nodes.forEach(n => {
+      if (!orderedIds.includes(n.id)) {
+        orderedIds.push(n.id);
+      }
+    });
+
+    const gapX = 320;
+    const gapY = 220;
+    const startX = 100;
+    const startY = 150;
+
+    const alignedNodes = nodes.map(node => {
+      const index = orderedIds.indexOf(node.id);
+      if (index === -1) return node;
+
+      if (direction === 'horizontal') {
+        return {
+          ...node,
+          position: {
+            x: startX + index * gapX,
+            y: startY + (index % 2 === 0 ? 0 : 40)
+          }
+        };
+      } else {
+        return {
+          ...node,
+          position: {
+            x: startX + (index % 2 === 0 ? 0 : 80),
+            y: startY + index * gapY
+          }
+        };
+      }
+    });
+
+    get().setNodes(alignedNodes);
+    get().saveWorkflow();
+
+    get().addLog({
+      level: 'sentient',
+      message: `Aligned ${nodes.length} nodes ${direction}ly based on connection order.`,
+      source: 'AUTO_ALIGNER'
+    });
+    get().addNotification({
+      title: 'Nodes Aligned',
+      message: `Successfully arranged all ${nodes.length} nodes ${direction}ly.`,
+      type: 'success'
+    });
   },
 }))

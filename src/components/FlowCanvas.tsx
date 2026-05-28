@@ -12,6 +12,7 @@ import ReactFlow, {
 import 'reactflow/dist/style.css';
 import { useWorkflowStore } from '../store/useWorkflowStore';
 import { CustomNode } from './CustomNode';
+import { getNodeDocumentation } from '../lib/docs';
 import { NeuralEdge } from './NeuralEdge';
 import { GroupNode } from './GroupNode';
 import { NodePropertiesPanel } from './NodePropertiesPanel';
@@ -35,7 +36,9 @@ import {
   Pause,
   SkipForward,
   RotateCcw,
-  History
+  History,
+  SlidersHorizontal,
+  Sliders
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 
@@ -151,6 +154,7 @@ export const FlowCanvas = () => {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const [reactFlowInstance, setReactFlowInstance] = React.useState<ReactFlowInstance | null>(null);
   const [lastExecution, setLastExecution] = React.useState<string | null>(null);
+  const copiedNodesRef = useRef<any[]>([]);
   const [saveStatus, setSaveStatus] = React.useState<string | null>(null);
   const [lastSavedTime, setLastSavedTime] = React.useState<string | null>(null);
   
@@ -181,7 +185,8 @@ export const FlowCanvas = () => {
     workspaces,
     currentWorkspaceId,
     addRuntimeJob,
-    executeSequence
+    executeSequence,
+    alignNodes
   } = useWorkflowStore();
 
   const activeWs = workspaces.find(w => w.id === currentWorkspaceId);
@@ -230,11 +235,73 @@ export const FlowCanvas = () => {
         e.preventDefault();
         reactFlowInstance?.fitView();
       }
+
+      // Ctrl + C: Copy selected nodes
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c') {
+        const target = e.target as HTMLElement;
+        if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
+          return;
+        }
+        const state = useWorkflowStore.getState();
+        const selectedNodes = state.nodes.filter(n => n.selected);
+        if (selectedNodes.length > 0) {
+          e.preventDefault();
+          copiedNodesRef.current = JSON.parse(JSON.stringify(selectedNodes));
+          state.addNotification({
+            title: 'Nodes Copied',
+            message: `Copied ${selectedNodes.length} node(s) to system clipboard.`,
+            type: 'info'
+          });
+        }
+      }
+
+      // Ctrl + V: Paste/Duplicate nodes
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'v') {
+        const target = e.target as HTMLElement;
+        if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
+          return;
+        }
+        if (copiedNodesRef.current.length > 0) {
+          e.preventDefault();
+          const state = useWorkflowStore.getState();
+          state.takeSnapshot();
+          
+          // Deselect existing nodes
+          const baseNodes = state.nodes.map(n => ({ ...n, selected: false }));
+          
+          const pastedNodes = copiedNodesRef.current.map(originalNode => {
+            const newId = `${originalNode.type}-${Date.now()}-${Math.round(Math.random() * 10000)}`;
+            return {
+              ...originalNode,
+              id: newId,
+              selected: true,
+              position: {
+                x: originalNode.position.x + 50,
+                y: originalNode.position.y + 50
+              },
+              data: {
+                ...originalNode.data,
+                status: 'success', // Reset execution/error status on duplicate for clean state
+                executionCount: 0, // Reset run count for the new node
+                lastExecutionTime: undefined
+              }
+            };
+          });
+          
+          state.setNodes([...baseNodes, ...pastedNodes]);
+          state.saveWorkflow();
+          state.addNotification({
+            title: 'Nodes Pasted',
+            message: `Duplicated ${pastedNodes.length} node(s) successfully.`,
+            type: 'success'
+          });
+        }
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [saveWorkflow, reactFlowInstance]);
+  }, [saveWorkflow, reactFlowInstance, undo, redo]);
 
   const handleSave = () => {
     saveWorkflow();
@@ -266,7 +333,11 @@ export const FlowCanvas = () => {
         id: `${type.toLowerCase()}-${Date.now()}`,
         type: type.toLowerCase(), // Ensure lowercase 'trigger' or 'action'
         position,
-        data: { label, icon },
+        data: { 
+          label, 
+          icon,
+          documentation: getNodeDocumentation(label) 
+        },
       };
 
       addNode(newNode);
@@ -622,6 +693,26 @@ export const FlowCanvas = () => {
               title="Redo Sequence"
              >
                 <Redo2 size={14} />
+             </button>
+          </div>
+
+          {/* Topological Auto Alignment Controls */}
+          <div className="flex bg-white/5 border border-white/10 rounded-full overflow-hidden shrink-0">
+             <button 
+              onClick={() => alignNodes('horizontal')}
+              className="p-2.5 md:p-3 border-r border-white/5 hover:bg-white/5 text-white/30 hover:text-vox-primary transition-all active:scale-95 flex items-center gap-1.5"
+              title="Align Nodes Horizontally (Topological Order)"
+             >
+                <SlidersHorizontal size={13} />
+                <span className="text-[8px] font-black uppercase tracking-wider hidden md:inline">Align H</span>
+             </button>
+             <button 
+              onClick={() => alignNodes('vertical')}
+              className="p-2.5 md:p-3 hover:bg-white/5 text-white/30 hover:text-vox-primary transition-all active:scale-95 flex items-center gap-1.5"
+              title="Align Nodes Vertically (Topological Order)"
+             >
+                <Sliders size={13} />
+                <span className="text-[8px] font-black uppercase tracking-wider hidden md:inline">Align V</span>
              </button>
           </div>
 

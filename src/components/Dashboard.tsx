@@ -281,6 +281,75 @@ const ActivityLog = () => {
   );
 };
 
+const ExecutionHistory = () => {
+  const { workflowRunsHistory } = useWorkflowStore();
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+        <h2 className="text-[10px] font-black text-white uppercase tracking-[0.3em] flex items-center gap-3">
+          <Clock size={12} className="text-vox-secondary animate-pulse" />
+          Execution Runs Log
+        </h2>
+        <span className="text-[8px] font-mono text-white/40 uppercase tracking-widest">RUN_REGISTRY</span>
+      </div>
+
+      <div className="space-y-2.5 max-h-[350px] overflow-y-auto custom-scrollbar pr-1">
+        {workflowRunsHistory.length === 0 ? (
+          <div className="p-8 rounded-2xl border border-white/5 bg-white/[0.01] flex flex-col items-center gap-2 text-center">
+            <Clock size={18} className="text-white/10" />
+            <p className="text-[8px] font-black text-white/20 uppercase tracking-[0.2em]">No previous execution runs logged.</p>
+          </div>
+        ) : (
+          workflowRunsHistory.map((run, i) => (
+            <motion.div
+              key={run.id}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.05 }}
+              className="p-3.5 rounded-2xl bg-white/[0.01] border border-white/[0.05] flex items-center justify-between gap-4 hover:bg-white/[0.03] transition-all"
+            >
+              <div className="flex items-center gap-3">
+                <div className={cn(
+                  "w-2.5 h-2.5 rounded-full",
+                  run.status === 'success' ? "bg-emerald-550 bg-emerald-500 shadow-[0_0_8px_#10B981]" :
+                  run.status === 'failed' ? "bg-red-500 shadow-[0_0_8px_#EF4444]" :
+                  run.status === 'running' ? "bg-vox-primary shadow-[0_0_8px_#00E5FF] animate-ping" :
+                  "bg-amber-500 shadow-[0_0_8px_#F59E0B]"
+                )} />
+                <div>
+                  <h4 className="text-[10px] font-black uppercase tracking-wider text-white">
+                    {run.workspaceName}
+                  </h4>
+                  <p className="text-[8px] text-white/40 font-mono font-medium">RUN ID: {run.id.split('-')[1] || run.id}</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-4 text-right">
+                <div className="flex flex-col items-end">
+                  <span className={cn(
+                    "text-[8px] font-black uppercase px-2 py-0.5 rounded leading-none tracking-widest border",
+                    run.status === 'success' ? "text-emerald-400 bg-emerald-400/10 border-emerald-400/20" :
+                    run.status === 'failed' ? "text-red-400 bg-red-400/10 border-red-400/20" :
+                    run.status === 'running' ? "text-vox-primary bg-vox-primary/10 border-vox-primary/20" :
+                    "text-amber-400 bg-amber-400/10 border-amber-400/20"
+                  )}>
+                    {run.status}
+                  </span>
+                  <span className="text-[8px] text-white/30 font-bold mt-1 uppercase tracking-wider">DUR: {run.duration}</span>
+                </div>
+                <div className="text-[8px] font-mono font-bold text-white/30 select-none hidden sm:block">
+                  [{run.timestamp}]
+                </div>
+              </div>
+            </motion.div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+};
+
 import { TypingText } from './TypingText';
 import { SentientTerminal } from './SentientTerminal';
 
@@ -336,6 +405,9 @@ export const Dashboard = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
              <SentientTerminal />
              <ActivityLog />
+          </div>
+          <div className="p-8 rounded-[3rem] bg-vox-panel/40 backdrop-blur-2xl border border-vox-border relative overflow-hidden">
+             <ExecutionHistory />
           </div>
         </div>
 
